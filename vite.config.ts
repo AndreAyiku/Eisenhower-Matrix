@@ -11,6 +11,9 @@ export default defineConfig({
       filename: "sw.ts",
       registerType: "autoUpdate",
       injectRegister: "auto",
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+      },
       manifest: {
         name: "Eisenhower Matrix",
         short_name: "Matrix",
@@ -19,7 +22,7 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         background_color: "#ffffff",
-        theme_color: "#1f2937",
+        theme_color: "#ffffff",
         icons: [
           { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
