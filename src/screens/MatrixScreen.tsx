@@ -14,7 +14,11 @@ export default function MatrixScreen() {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader
+        eyebrow="Prioritise / Eisenhower"
+        title="What matters most."
+        subtitle="Importance creates impact. Urgency sets the pace."
+      />
       <main className="content">
         <SegmentedControl />
 

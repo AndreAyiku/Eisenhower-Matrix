@@ -1105,3 +1105,369 @@ button.primary-btn {
 .step-remove:active {
   color: var(--q-do);
 }
+/* ---------- Calendar ---------- */
+.day-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  touch-action: pan-y;
+}
+
+.day-pill {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 62px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.day-pill .dow {
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.day-pill .num {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.day-pill .dot {
+  position: absolute;
+  bottom: 6px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--action);
+}
+
+.day-pill.selected {
+  background: var(--action);
+  color: var(--on-accent);
+}
+
+.day-pill.selected .dow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.day-pill.selected .dot {
+  background: var(--on-accent);
+}
+
+.day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: -8px;
+}
+
+.day-heading h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.day-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.text-btn {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--action);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.agenda-time {
+  flex: none;
+  width: 36px;
+  padding-top: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.agenda-card {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 54px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--text-2);
+  border-radius: 6px 12px 12px 6px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.agenda-card.task {
+  border-left-color: var(--action);
+  background: var(--action-tint);
+}
+
+.agenda-card.task .agenda-title {
+  color: var(--action);
+  font-weight: 600;
+}
+
+.agenda-card.done .agenda-title {
+  color: var(--text-2);
+  text-decoration: line-through;
+}
+
+.agenda-card.unsched {
+  border-left-style: dashed;
+}
+
+.agenda-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.agenda-meta {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.now-line {
+  position: absolute;
+  left: -3px;
+  right: 0;
+  height: 1px;
+  background: var(--action);
+  pointer-events: none;
+}
+
+.now-label {
+  position: absolute;
+  right: 100%;
+  top: -8px;
+  padding-right: 4px;
+  background: var(--bg);
+  color: var(--action);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.now-row {
+  align-items: center;
+}
+
+.now-time {
+  flex: none;
+  width: 36px;
+  color: var(--action);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.now-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--action);
+}
+
+.unsched-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cal-empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Week view */
+.week-range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.week-range h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.week-nav {
+  display: flex;
+  margin: -10px -12px;
+}
+
+.week-nav button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+}
+
+.week-head,
+.week-body {
+  display: grid;
+  grid-template-columns: 34px repeat(var(--cols), minmax(0, 1fr));
+}
+
+.week-head {
+  padding-bottom: 6px;
+}
+
+.wk-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+}
+
+.wk-dow {
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.wk-num {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.wk-day.today .wk-num {
+  color: var(--action);
+}
+
+.week-body {
+  margin-top: 8px;
+}
+
+.wk-axis {
+  position: relative;
+  height: var(--grid-h);
+}
+
+.wk-hour {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.wk-col {
+  position: relative;
+  height: var(--grid-h);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--border) 0,
+    var(--border) 1px,
+    transparent 1px,
+    transparent var(--hour-h)
+  );
+}
+
+.wk-col:last-child {
+  border-right: 1px solid var(--border);
+}
+
+.wk-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 3px 4px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--action) 25%, transparent);
+  border-radius: 6px;
+  background: var(--action-tint);
+  color: var(--action);
+  text-decoration: none;
+}
+
+.wk-block-title {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.wk-block-time {
+  font-size: 8px;
+  line-height: 1.2;
+  color: var(--text-2);
+}
+
+.wk-block.done {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.wk-block.done .wk-block-title {
+  text-decoration: line-through;
+}
+
+.week-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.week-note svg {
+  flex: none;
+}

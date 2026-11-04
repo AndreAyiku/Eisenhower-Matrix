@@ -17,13 +17,14 @@ import { useTasks } from "../store/tasksContext";
 
 interface Props {
   onClose: () => void;
+  initialDue?: string;
 }
 
-export default function AddTaskSheet({ onClose }: Props) {
+export default function AddTaskSheet({ onClose, initialDue }: Props) {
   const { addTask } = useTasks();
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
-  const [dueLocal, setDueLocal] = useState("");
+  const [dueLocal, setDueLocal] = useState(initialDue ?? "");
   const [estimate, setEstimate] = useState(0);
   const [manual, setManual] = useState<PriorityFlags | null>(null);
   const [adjusting, setAdjusting] = useState(false);
