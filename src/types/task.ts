@@ -19,7 +19,7 @@ export interface Task {
   project?: string;
   dueDate?: string; // "YYYY-MM-DD" (local date); missing = "Someday"
   dueTime?: string; // "HH:mm"
-  reminderAt?: string; // ISO date-time
+  reminderAt?: string; // local date-time, "YYYY-MM-DDTHH:mm"
   estimateMinutes?: number;
   subtasks: Subtask[];
   createdAt: string;

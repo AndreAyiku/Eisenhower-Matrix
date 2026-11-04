@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import type { Task } from "../types/task";
 import { formatDue } from "../lib/dates";
 
@@ -15,11 +16,13 @@ export default function TaskCard({ task }: Props) {
 
   return (
     <li className="task">
-      <div className="task-title-row">
-        <span className="task-dot" aria-hidden="true" />
-        <span className="task-title">{task.title}</span>
-      </div>
-      <span className="task-meta">{meta}</span>
+      <Link className="task-link" to={`/tasks/${task.id}`}>
+        <div className="task-title-row">
+          <span className="task-dot" aria-hidden="true" />
+          <span className="task-title">{task.title}</span>
+        </div>
+        <span className="task-meta">{meta}</span>
+      </Link>
     </li>
   );
 }

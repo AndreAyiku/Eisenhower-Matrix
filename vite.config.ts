@@ -15,9 +15,9 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
       },
       manifest: {
-        name: "Eisenhower Matrix",
-        short_name: "Matrix",
-        description: "Prioritize tasks by urgency and importance",
+        name: "FocusFlow",
+        short_name: "FocusFlow",
+        description: "Prioritise what matters, plan your day, find your focus",
         display: "standalone",
         start_url: "/",
         scope: "/",

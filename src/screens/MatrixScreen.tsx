@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Plus, Sparkles } from "lucide-react";
+import AddTaskSheet from "../components/AddTaskSheet";
 import AppHeader from "../components/AppHeader";
 import SegmentedControl from "../components/SegmentedControl";
 import Matrix from "../components/Matrix";
-import { SAMPLE_TASKS } from "../lib/sampleTasks";
-import type { Task } from "../types/task";
+import { useTasks } from "../store/tasksContext";
 
 export default function MatrixScreen() {
-  const [tasks] = useState<Task[]>(SAMPLE_TASKS);
+  const { tasks } = useTasks();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
   const openCount = tasks.filter((t) => !t.completed).length;
 
   return (
@@ -20,7 +22,12 @@ export default function MatrixScreen() {
           <p className="summary-text">
             {openCount} open {openCount === 1 ? "task" : "tasks"} · All projects
           </p>
-          <button type="button" className="add-btn" aria-label="Add task">
+          <button
+            type="button"
+            className="add-btn"
+            aria-label="Add task"
+            onClick={() => setSheetOpen(true)}
+          >
             <Plus size={22} strokeWidth={1.75} />
           </button>
         </div>
@@ -35,6 +42,8 @@ export default function MatrixScreen() {
           </span>
         </p>
       </main>
+
+      {sheetOpen && <AddTaskSheet onClose={closeSheet} />}
     </>
   );
 }

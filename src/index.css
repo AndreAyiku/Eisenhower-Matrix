@@ -387,3 +387,721 @@ button {
   background: var(--action-tint);
   color: var(--action);
 }
+/* ---------- Task detail ---------- */
+:root {
+  --chip: #f0f1f4;
+  --switch-off: #d5d9e2;
+  --success: #237b57;
+  --on-accent: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --chip: #222631;
+  --switch-off: #3a4050;
+  --q-chip-bg: #222631;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --chip: #222631;
+    --switch-off: #3a4050;
+    --q-chip-bg: #222631;
+  }
+}
+
+.task-link {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: -6px 0;
+  padding: 6px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.app.detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.9px;
+}
+
+.title-input::placeholder,
+.notes-input::placeholder,
+.step-title::placeholder {
+  color: var(--text-2);
+}
+
+.detail-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 24px calc(38px + env(safe-area-inset-bottom, 0px));
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--chip);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip-q[data-q="do"] {
+  color: var(--q-do);
+  background: var(--q-chip-bg, var(--q-do-bg));
+}
+.chip-q[data-q="schedule"] {
+  color: var(--q-schedule);
+  background: var(--q-chip-bg, var(--q-schedule-bg));
+}
+.chip-q[data-q="delegate"] {
+  color: var(--q-delegate);
+  background: var(--q-chip-bg, var(--q-delegate-bg));
+}
+.chip-q[data-q="eliminate"] {
+  color: var(--q-eliminate);
+  background: var(--q-chip-bg, var(--q-eliminate-bg));
+}
+
+.notes-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 16px; /* 16px stops iOS zooming in on focus */
+  line-height: 1.45;
+}
+
+/* Priority card */
+.priority-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-2);
+}
+
+.priority-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.priority-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.priority-label {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.priority-hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--switch-off);
+  transition: background 0.15s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked="true"] {
+  background: var(--action);
+}
+
+.switch[aria-checked="true"]::after {
+  transform: translateX(18px);
+}
+
+/* Property rows */
+.props {
+  display: flex;
+  flex-direction: column;
+}
+
+.prop-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+
+.prop-icon {
+  flex: none;
+  color: var(--text);
+}
+
+.prop-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.prop-value {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.prop-chevron {
+  flex: none;
+  color: var(--text-2);
+}
+
+.prop-clear {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -14px -14px -14px -8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+}
+
+.prop-native {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Smaller steps */
+.steps-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.steps-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.steps-count {
+  font-size: 13px;
+  color: var(--action);
+}
+
+.steps-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step,
+.add-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+}
+
+.step {
+  border-bottom: 1px solid var(--border);
+}
+
+.check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: #ffffff;
+}
+
+.check.done {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.check.add {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.step-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.step-title {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* 16px stops iOS zooming in on focus */
+}
+
+.step.done .step-title {
+  color: var(--text-2);
+  text-decoration: line-through;
+}
+
+.step-meta {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.step-meta-edit {
+  position: relative;
+}
+
+.step-meta-edit .prop-native {
+  inset: -4px -8px -12px -8px;
+  width: auto;
+  height: auto;
+}
+
+.step-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--action);
+}
+
+.step.done .step-dot {
+  background: var(--success);
+}
+
+/* Footer actions */
+.detail-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.primary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: var(--action);
+  color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.quiet-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.quiet-btn {
+  height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.quiet-btn.danger {
+  color: var(--q-do);
+}
+/* ---------- Task cards (tappable containers) ---------- */
+.task-list {
+  gap: 8px;
+}
+
+.task {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+:root[data-theme="dark"] .task {
+  background: var(--surface-2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .task {
+    background: var(--surface-2);
+  }
+}
+
+.task-link {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 10px 12px;
+  color: inherit;
+  text-decoration: none;
+  -webkit-touch-callout: none;
+}
+
+.task-link:active {
+  opacity: 0.6;
+}
+
+.task-meta {
+  white-space: normal;
+}
+/* ---------- Add task sheet ---------- */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 12, 18, 0.45);
+  animation: fade-in 0.18s ease-out;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92dvh;
+  padding: 10px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 28px 28px 0 0;
+  background: var(--surface);
+  animation: sheet-up 0.24s ease-out;
+}
+
+.sheet-handle {
+  flex: none;
+  align-self: center;
+  width: 48px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+}
+
+.sheet-sub {
+  margin: -4px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 14px;
+}
+
+.field-input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* 16px stops iOS zooming in on focus */
+  line-height: 1.45;
+}
+
+.field-input::placeholder {
+  color: var(--text-2);
+}
+
+.field-input:focus {
+  border-color: var(--action);
+  box-shadow: 0 0 0 1px var(--action);
+}
+
+.field-textarea {
+  resize: none;
+  overflow: hidden;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 15px;
+}
+
+.field-box .placeholder {
+  color: var(--text-2);
+}
+
+.field-icon {
+  flex: none;
+  color: var(--text-2);
+}
+
+.field-clear {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0 -14px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+}
+
+.auto-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--action-tint);
+}
+
+.auto-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.auto-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--action);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auto-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.auto-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--action);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.adjust-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet-backdrop {
+    animation: none;
+  }
+}
+
+/* ---------- Detail: save bar and step removal ---------- */
+.detail-body {
+  padding-bottom: 0;
+}
+
+.detail-footer {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -24px;
+  padding: 12px 24px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+}
+
+button.primary-btn {
+  width: 100%;
+  border: 0;
+}
+
+.saved-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--success);
+}
+
+.step-remove {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-right: -8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+}
+
+.step-remove:active {
+  color: var(--q-do);
+}

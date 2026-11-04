@@ -25,3 +25,37 @@ export function formatDue(iso?: string): string {
   const date = new Date(y, m - 1, d);
   return `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}`;
 }
+
+export function formatDateTime(date?: string, time?: string): string {
+  if (!date) return "Not set";
+  return time ? `${formatDue(date)}, ${time}` : formatDue(date);
+}
+
+/** value like "2026-11-03T16:30" (what <input type="datetime-local"> uses) */
+export function formatLocalDateTime(value?: string): string {
+  if (!value) return "Not set";
+  const [date, time] = value.split("T");
+  return formatDateTime(date, time?.slice(0, 5));
+}
+
+export function toLocalInput(date?: string, time?: string): string {
+  if (!date) return "";
+  return `${date}T${time ?? "09:00"}`;
+}
+
+export function fromLocalInput(value: string): { date?: string; time?: string } {
+  if (!value) return {};
+  const [date, time] = value.split("T");
+  return { date, time: time?.slice(0, 5) };
+}
+
+export function completedLabel(iso?: string): string {
+  if (!iso) return "Completed";
+  const d = new Date(iso);
+  if (toISODate(d) === todayISO()) {
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `Completed at ${hh}:${mm}`;
+  }
+  return `Completed ${formatDue(toISODate(d))}`;
+}

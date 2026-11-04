@@ -4,11 +4,14 @@ import { BrowserRouter } from "react-router";
 import "@fontsource-variable/inter";
 import "./index.css";
 import App from "./App";
+import TasksProvider from "./store/TasksProvider";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <TasksProvider>
+        <App />
+      </TasksProvider>
     </BrowserRouter>
   </StrictMode>
 );

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router";
 import TabLayout from "./layouts/TabLayout";
 import MatrixScreen from "./screens/MatrixScreen";
+import TaskDetailScreen from "./screens/TaskDetailScreen";
 import ComingSoon from "./screens/ComingSoon";
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/focus" element={<ComingSoon title="Focus" />} />
         <Route path="/insights" element={<ComingSoon title="Insights" />} />
       </Route>
+      <Route path="/tasks/:taskId" element={<TaskDetailScreen />} />
       <Route path="*" element={<Navigate to="/tasks" replace />} />
     </Routes>
   );

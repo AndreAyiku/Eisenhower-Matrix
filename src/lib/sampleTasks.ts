@@ -1,6 +1,12 @@
 import type { Task } from "../types/task";
 import { addDaysISO, todayISO } from "./dates";
 
+function todayAt(hours: number, minutes: number): string {
+  const d = new Date();
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+}
+
 function make(
   id: string,
   title: string,
@@ -28,9 +34,10 @@ export const SAMPLE_TASKS: Task[] = [
     tags: ["Strategy"],
     dueDate: todayISO(),
     dueTime: "17:00",
+    reminderAt: `${todayISO()}T16:30`,
     estimateMinutes: 45,
     subtasks: [
-      { id: "1a", title: "Outline the launch story", done: true },
+      { id: "1a", title: "Outline the launch story", done: true, completedAt: todayAt(9, 10) },
       { id: "1b", title: "Define success metrics", done: false, estimateMinutes: 20 },
       { id: "1c", title: "Draft rollout timeline", done: false, estimateMinutes: 25 },
     ],
