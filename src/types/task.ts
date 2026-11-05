@@ -20,6 +20,7 @@ export interface Task {
   dueDate?: string; // "YYYY-MM-DD" (local date); missing = "Someday"
   dueTime?: string; // "HH:mm"
   reminderAt?: string; // local date-time, "YYYY-MM-DDTHH:mm"
+  calendar?: string; // "Work", "Personal"
   estimateMinutes?: number;
   subtasks: Subtask[];
   createdAt: string;

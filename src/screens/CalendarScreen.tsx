@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import AddTaskSheet from "../components/AddTaskSheet";
 import AppHeader from "../components/AppHeader";
 import DayAgenda from "../components/DayAgenda";
-import DayStrip from "../components/Daystrip";
+import DayStrip from "../components/DayStrip";
+import EditBlockSheet from "../components/EditBlockSheet";
 import SegmentedControl from "../components/SegmentedControl";
 import WeekGrid from "../components/WeekGrid";
 import { useNow } from "../hooks/useNow";
@@ -21,6 +22,7 @@ import {
 } from "../lib/calendar";
 import { toISODate } from "../lib/dates";
 import { useTasks } from "../store/tasksContext";
+import type { Task } from "../types/task";
 
 type View = "Day" | "Week";
 const TABS = ["Day", "Week"];
@@ -33,7 +35,9 @@ export default function CalendarScreen() {
   const [view, setView] = useState<View>("Day");
   const [selected, setSelected] = useState(() => toISODate(new Date()));
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editing, setEditing] = useState<Task | null>(null);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
+  const closeEditor = useCallback(() => setEditing(null), []);
 
   const days = useMemo(() => weekDays(selected), [selected]);
   const weekRange = formatWeekRange(days);
@@ -87,6 +91,7 @@ export default function CalendarScreen() {
               unscheduled={unscheduledForDay(tasks, selected)}
               showNow={selected === today}
               nowMin={nowMin}
+              onSelect={setEditing}
             />
           </>
         ) : (
@@ -113,6 +118,7 @@ export default function CalendarScreen() {
                 setSelected(iso);
                 setView("Day");
               }}
+              onSelect={setEditing}
             />
           </>
         )}
@@ -120,6 +126,15 @@ export default function CalendarScreen() {
 
       {sheetOpen && (
         <AddTaskSheet onClose={closeSheet} initialDue={defaultDue(selected, now)} />
+      )}
+
+      {editing && (
+        <EditBlockSheet
+          key={editing.id}
+          task={editing}
+          onClose={closeEditor}
+          onSaved={setSelected}
+        />
       )}
     </>
   );

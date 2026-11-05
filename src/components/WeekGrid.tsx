@@ -9,6 +9,7 @@ import {
   weekdayShort,
   type Block,
 } from "../lib/calendar";
+import type { Task } from "../types/task";
 
 const HOUR_H = 45;
 
@@ -17,9 +18,10 @@ interface Props {
   blocks: Block[];
   today: string;
   onPickDay: (iso: string) => void;
+  onSelect: (task: Task) => void;
 }
 
-export default function WeekGrid({ days, blocks, today, onPickDay }: Props) {
+export default function WeekGrid({ days, blocks, today, onPickDay, onSelect }: Props) {
   const weekend = days.slice(5);
   const showWeekend = blocks.some((b) => weekend.includes(b.date));
   const shown = showWeekend ? days : days.slice(0, 5);
@@ -88,6 +90,10 @@ export default function WeekGrid({ days, blocks, today, onPickDay }: Props) {
                       height,
                       left: `calc(${(b.lane / b.lanes) * 100}% + 2px)`,
                       width: `calc(${100 / b.lanes}% - 4px)`,
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelect(b.task);
                     }}
                   >
                     <span className="wk-block-title">{b.task.title}</span>

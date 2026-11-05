@@ -9,15 +9,17 @@ interface Props {
   unscheduled: Task[];
   showNow: boolean;
   nowMin: number;
+  onSelect: (task: Task) => void;
 }
 
 interface CardProps {
   block: Block;
   nowPct: number | null;
   nowLabel: string;
+  onSelect: (task: Task) => void;
 }
 
-function BlockCard({ block, nowPct, nowLabel }: CardProps) {
+function BlockCard({ block, nowPct, nowLabel, onSelect }: CardProps) {
   const { task } = block;
   const tag = task.tags[0];
   const meta = `${fmtMin(block.startMin)}–${fmtMin(block.endMin)}${tag ? ` · ${tag}` : ""}`;
@@ -26,6 +28,10 @@ function BlockCard({ block, nowPct, nowLabel }: CardProps) {
     <Link
       to={`/tasks/${task.id}`}
       className={`agenda-card ${task.completed ? "done" : "task"}`}
+      onClick={(e) => {
+        e.preventDefault();
+        onSelect(task);
+      }}
     >
       <span className="agenda-title">{task.title}</span>
       <span className="agenda-meta">{meta}</span>
@@ -38,7 +44,7 @@ function BlockCard({ block, nowPct, nowLabel }: CardProps) {
   );
 }
 
-export default function DayAgenda({ blocks, unscheduled, showNow, nowMin }: Props) {
+export default function DayAgenda({ blocks, unscheduled, showNow, nowMin, onSelect }: Props) {
   const nowLabel = fmtMin(nowMin);
   const insideIndex = showNow
     ? blocks.findIndex((b) => nowMin >= b.startMin && nowMin < b.endMin)
@@ -73,7 +79,7 @@ export default function DayAgenda({ blocks, unscheduled, showNow, nowMin }: Prop
     rows.push(
       <li key={block.task.id} className="agenda-row">
         <span className="agenda-time">{fmtMin(block.startMin)}</span>
-        <BlockCard block={block} nowPct={pct} nowLabel={nowLabel} />
+        <BlockCard block={block} nowPct={pct} nowLabel={nowLabel} onSelect={onSelect} />
       </li>
     );
   });
@@ -89,12 +95,19 @@ export default function DayAgenda({ blocks, unscheduled, showNow, nowMin }: Prop
           <ul className="agenda">
             {unscheduled.map((task) => (
               <li key={task.id}>
-                <Link to={`/tasks/${task.id}`} className="agenda-card unsched">
+                <Link
+                  to={`/tasks/${task.id}`}
+                  className="agenda-card unsched"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSelect(task);
+                  }}
+                >
                   <span className="agenda-title">{task.title}</span>
                   <span className="agenda-meta">
                     {task.estimateMinutes
-                      ? formatEstimate(task.estimateMinutes)
-                      : "Add a due time to place it"}
+                      ? `${formatEstimate(task.estimateMinutes)} · Tap to schedule`
+                      : "Tap to schedule"}
                   </span>
                 </Link>
               </li>
