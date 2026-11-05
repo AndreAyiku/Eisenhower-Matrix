@@ -1818,3 +1818,165 @@ button.primary-btn {
   font-size: 12px;
   color: var(--text-2);
 }
+/* ---------- Number stepper and skip break ---------- */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+}
+
+.stepper-value {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.stepper-value:focus-within {
+  border-color: var(--action);
+  box-shadow: 0 0 0 1px var(--action);
+}
+
+.stepper-input {
+  width: 4ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 18px; /* 16px or more stops iOS zooming in on focus */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper-unit {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.skip-btn {
+  align-self: center;
+}
+/* ---------- Splitting a task into sessions ---------- */
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.split-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.split-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 56px;
+  padding: 10px 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.split-opt.on {
+  border-color: var(--action);
+  background: var(--action-tint);
+  color: var(--action);
+  box-shadow: 0 0 0 1px var(--action);
+}
+
+.split-n {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.split-len {
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.split-opt.on .split-len {
+  color: var(--action);
+}
+
+.split-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.split-hint {
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.done-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-2);
+}
+
+.done-card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.done-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dots.bars .dot-s {
+  flex: 1 1 0;
+  width: auto;
+  max-width: 24px;
+}

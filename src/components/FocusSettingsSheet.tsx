@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { X } from "lucide-react";
+import NumberStepper from "./NumberStepper";
 import SelectField from "./SelectField";
 import { useSheet } from "../hooks/useSheet";
-import type { FocusSettings } from "../lib/focus";
+import { LIMITS, clampSettings, type FocusSettings } from "../lib/focus";
 
 interface Props {
   settings: FocusSettings;
@@ -10,17 +11,9 @@ interface Props {
   onClose: () => void;
 }
 
-// A 1-minute option shows up only while developing on your computer, for quick tests.
-const DEV: number[] = import.meta.env.DEV ? [1] : [];
-const FOCUS = [...DEV, 15, 20, 25, 30, 45, 50, 60, 90];
-const SHORT = [...DEV, 3, 5, 10, 15];
-const LONG = [10, 15, 20, 30, 45];
 const CYCLE = [2, 3, 4, 5, 6];
 
-const withCurrent = (options: number[], value: number) =>
-  options.includes(value) ? options : [...options, value].sort((a, b) => a - b);
-
-const mins = (n: number) => `${n} min`;
+const range = (r: { min: number; max: number }) => `Choose ${r.min} to ${r.max} minutes`;
 
 export default function FocusSettingsSheet({ settings, onSave, onClose }: Props) {
   useSheet(onClose);
@@ -28,7 +21,7 @@ export default function FocusSettingsSheet({ settings, onSave, onClose }: Props)
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    onSave(draft);
+    onSave(clampSettings(draft));
     onClose();
   };
 
@@ -51,31 +44,37 @@ export default function FocusSettingsSheet({ settings, onSave, onClose }: Props)
           </button>
         </div>
 
-        <SelectField
+        <NumberStepper
           label="Focus length"
+          hint={`${range(LIMITS.focus)}. Used when a task has no estimated time.`}
           value={draft.focusMin}
-          options={withCurrent(FOCUS, draft.focusMin)}
-          format={mins}
+          min={LIMITS.focus.min}
+          max={LIMITS.focus.max}
+          unit="min"
           onChange={(n) => setDraft({ ...draft, focusMin: n })}
         />
-        <SelectField
+        <NumberStepper
           label="Short break"
+          hint={range(LIMITS.short)}
           value={draft.shortMin}
-          options={withCurrent(SHORT, draft.shortMin)}
-          format={mins}
+          min={LIMITS.short.min}
+          max={LIMITS.short.max}
+          unit="min"
           onChange={(n) => setDraft({ ...draft, shortMin: n })}
         />
-        <SelectField
+        <NumberStepper
           label="Long break"
+          hint={range(LIMITS.long)}
           value={draft.longMin}
-          options={withCurrent(LONG, draft.longMin)}
-          format={mins}
+          min={LIMITS.long.min}
+          max={LIMITS.long.max}
+          unit="min"
           onChange={(n) => setDraft({ ...draft, longMin: n })}
         />
         <SelectField
           label="Focus sessions before a long break"
           value={draft.cycle}
-          options={withCurrent(CYCLE, draft.cycle)}
+          options={CYCLE}
           format={(n) => `${n} sessions`}
           onChange={(n) => setDraft({ ...draft, cycle: n })}
         />
