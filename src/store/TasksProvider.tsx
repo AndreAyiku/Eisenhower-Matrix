@@ -20,7 +20,12 @@ function load(): Task[] {
 }
 
 function touch(task: Task, patch: Partial<Task>): Task {
-  return { ...task, ...patch, updatedAt: new Date().toISOString() };
+  const now = new Date().toISOString();
+  const next: Task = { ...task, ...patch, updatedAt: now };
+  if (patch.completed !== undefined && patch.completed !== task.completed) {
+    next.completedAt = patch.completed ? now : undefined;
+  }
+  return next;
 }
 
 interface Props {

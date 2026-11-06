@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
-import { Plus, Sparkles } from "lucide-react";
+import { Info, Plus } from "lucide-react";
 import AddTaskSheet from "../components/AddTaskSheet";
 import AppHeader from "../components/AppHeader";
-import SegmentedControl from "../components/SegmentedControl";
 import Matrix from "../components/Matrix";
 import { useTasks } from "../store/tasksContext";
 
@@ -20,8 +19,6 @@ export default function MatrixScreen() {
         subtitle="Importance creates impact. Urgency sets the pace."
       />
       <main className="content">
-        <SegmentedControl />
-
         <div className="summary">
           <p className="summary-text">
             {openCount} open {openCount === 1 ? "task" : "tasks"} · All projects
@@ -39,11 +36,8 @@ export default function MatrixScreen() {
         <Matrix tasks={tasks} />
 
         <p className="guidance">
-          <Sparkles size={18} strokeWidth={1.75} aria-hidden="true" />
-          <span>
-            AI suggests a quadrant. You always have the final say. Tap a task to
-            adjust its priority.
-          </span>
+          <Info size={18} strokeWidth={1.75} aria-hidden="true" />
+          <span>Tap a task to open it and change how important or urgent it is.</span>
         </p>
       </main>
 
