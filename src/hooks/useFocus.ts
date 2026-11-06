@@ -9,7 +9,6 @@ import {
   planSessionMs,
   saveSettings,
   saveState,
-  type FocusMode,
   type FocusSettings,
   type FocusState,
   type Plan,
@@ -21,7 +20,7 @@ export function useFocus() {
   const [settings, setSettings] = useState<FocusSettings>(loadSettings);
   const [state, setState] = useState<FocusState>(() => {
     const saved = loadState(settings);
-    const sessions = saved.plan?.sessions ?? settings.cycle;
+    const sessions = saved.plan?.sessions ?? 1;
     return { ...saved, session: Math.min(Math.max(saved.session, 1), sessions) };
   });
 
@@ -69,18 +68,13 @@ export function useFocus() {
   remainingMs = Math.max(0, Math.min(totalMs, remainingMs));
 
   const begin = useCallback(
-    (plan: Plan | null, taskId: string | null) => {
+    (plan: Plan, taskId: string | null) => {
       unlockSound();
       const startedAt = Date.now();
       setState((prev) => {
-        const sessions = plan ? plan.sessions : settings.cycle;
-        const session = Math.min(Math.max(prev.session, 1), sessions);
+        const session = Math.min(Math.max(prev.session, 1), plan.sessions);
         const total =
-          prev.mode === "focus"
-            ? plan
-              ? planSessionMs(plan)
-              : modeMs("focus", settings)
-            : modeMs(prev.mode, settings);
+          prev.mode === "focus" ? planSessionMs(plan) : modeMs(prev.mode, settings);
         return {
           ...prev,
           plan,
@@ -161,20 +155,21 @@ export function useFocus() {
     setState((prev) => {
       if (prev.mode === "focus") return prev;
       const next = afterCompletion(prev, settings);
-      const sessionsTotal = next.plan ? next.plan.sessions : settings.cycle;
+      const total = next.plan ? next.plan.sessions : 1;
       return {
         ...next,
-        notice: `Break ended early. Ready for session ${next.session} of ${sessionsTotal}?`,
+        notice: `Break ended early. Ready for session ${next.session} of ${total}?`,
       };
     });
   }, [settings]);
 
-  const setMode = useCallback(
-    (mode: FocusMode) => {
+  // Switches between the short and long break on the break screen.
+  const chooseBreak = useCallback(
+    (mode: "short" | "long") => {
       setState((prev) => {
-        if (prev.status !== "idle") return prev;
+        if (prev.status !== "idle" || prev.mode === "focus") return prev;
         const total = modeMs(mode, settings);
-        return { ...prev, mode, totalMs: total, remainingMs: total, notice: undefined };
+        return { ...prev, mode, totalMs: total, remainingMs: total };
       });
     },
     [settings]
@@ -190,7 +185,9 @@ export function useFocus() {
   }, []);
 
   const choosePlan = useCallback((plan: Plan) => {
-    setState((prev) => (prev.status === "idle" ? { ...prev, plan } : prev));
+    setState((prev) =>
+      prev.status === "idle" && prev.mode === "focus" ? { ...prev, plan } : prev
+    );
   }, []);
 
   const resetPlan = useCallback(() => {
@@ -219,7 +216,7 @@ export function useFocus() {
     setSettings(next);
     saveSettings(next);
     setState((prev) => {
-      const session = Math.min(prev.session, prev.plan?.sessions ?? next.cycle);
+      const session = Math.min(prev.session, prev.plan?.sessions ?? 1);
       if (prev.status !== "idle") return { ...prev, session };
       const total = modeMs(prev.mode, next);
       return { ...prev, session, totalMs: total, remainingMs: total };
@@ -236,7 +233,7 @@ export function useFocus() {
     resume,
     end,
     skipBreak,
-    setMode,
+    chooseBreak,
     setTask,
     choosePlan,
     resetPlan,

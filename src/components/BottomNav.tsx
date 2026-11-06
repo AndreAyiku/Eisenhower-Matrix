@@ -1,19 +1,11 @@
 import { NavLink } from "react-router";
-import {
-  CalendarDays,
-  ChartNoAxesColumn,
-  House,
-  LayoutGrid,
-  Timer,
-  type LucideIcon,
-} from "lucide-react";
+import { CalendarDays, House, LayoutGrid, Timer, type LucideIcon } from "lucide-react";
 
 const ITEMS: { label: string; to: string; Icon: LucideIcon }[] = [
   { label: "Today", to: "/today", Icon: House },
   { label: "Tasks", to: "/tasks", Icon: LayoutGrid },
   { label: "Calendar", to: "/calendar", Icon: CalendarDays },
   { label: "Focus", to: "/focus", Icon: Timer },
-  { label: "Insights", to: "/insights", Icon: ChartNoAxesColumn },
 ];
 
 export default function BottomNav() {

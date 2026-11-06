@@ -13,7 +13,6 @@ export default function App() {
         <Route path="/today" element={<ComingSoon title="Today" />} />
         <Route path="/tasks" element={<MatrixScreen />} />
         <Route path="/calendar" element={<CalendarScreen />} />
-        <Route path="/insights" element={<ComingSoon title="Insights" />} />
       </Route>
       <Route path="/focus" element={<FocusScreen />} />
       <Route path="/tasks/:taskId" element={<TaskDetailScreen />} />

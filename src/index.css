@@ -1980,3 +1980,108 @@ button.primary-btn {
   width: auto;
   max-width: 24px;
 }
+/* ---------- Focus: rhythm row, sessions, break choice ---------- */
+.rhythm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -4px;
+}
+
+.rhythm-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.adjust-btn {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 6px;
+  min-height: 44px;
+  margin: -6px -8px -6px 0;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--action);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sessions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.snap-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--q-delegate);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.break-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.break-opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 80px;
+  padding: 16px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.break-opt.on {
+  border-color: var(--action);
+  background: var(--action-tint);
+  color: var(--action);
+  box-shadow: 0 0 0 1px var(--action);
+}
+
+.break-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.break-len {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.break-tag {
+  position: absolute;
+  top: -9px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Four-item bottom navigation */
+.bottom-nav {
+  gap: 6px;
+}
+
+.nav-item {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}

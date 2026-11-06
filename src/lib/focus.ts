@@ -8,7 +8,7 @@ export interface FocusSettings {
   focusMin: number;
   shortMin: number;
   longMin: number;
-  cycle: number; // focus sessions before a long break
+  cycle: number; // a long break is suggested after every Nth session
 }
 
 export const DEFAULT_SETTINGS: FocusSettings = {
@@ -29,19 +29,20 @@ export const LIMITS = {
 
 export const MAX_SESSIONS = 10;
 
-/** A task's estimated time split into equal focus sessions. */
+/** How a task's focus time is split into sessions. */
 export interface Plan {
-  taskId: string;
+  taskId: string | null;
   sessions: number;
-  estimateMin: number;
+  totalMin: number; // total focus time across all sessions
+  fixedTotal: boolean; // true when totalMin comes from the task's estimate
 }
 
 export interface FocusState {
   mode: FocusMode;
-  session: number; // 1-based position in the plan (or in the loop)
+  session: number; // 1-based position in the plan
   status: FocusStatus;
   taskId?: string | null; // undefined = automatic, null = no task
-  plan?: Plan | null; // null/undefined = plain loop
+  plan?: Plan | null;
   planDone?: string; // id of a task whose plan just finished
   totalMs: number;
   remainingMs: number;
@@ -58,7 +59,7 @@ export interface FocusLogEntry {
 }
 
 const SETTINGS_KEY = "ff-focus-settings-v1";
-const STATE_KEY = "ff-focus-state-v1";
+const STATE_KEY = "ff-focus-state-v2";
 const LOG_KEY = "ff-focus-log-v1";
 
 function read<T>(key: string): T | null {
@@ -114,6 +115,16 @@ export function initialState(settings: FocusSettings): FocusState {
   return { mode: "focus", session: 1, status: "idle", totalMs: total, remainingMs: total };
 }
 
+function validPlan(p: unknown): Plan | null {
+  if (!p || typeof p !== "object") return null;
+  const x = p as Partial<Plan>;
+  if (typeof x.sessions !== "number" || typeof x.totalMin !== "number") return null;
+  if (typeof x.fixedTotal !== "boolean") return null;
+  if (x.taskId !== null && typeof x.taskId !== "string") return null;
+  if (x.sessions < 1 || x.sessions > MAX_SESSIONS || x.totalMin <= 0) return null;
+  return x as Plan;
+}
+
 export function loadState(settings: FocusSettings): FocusState {
   const saved = read<FocusState>(STATE_KEY);
   const modes = ["focus", "short", "long"];
@@ -121,7 +132,7 @@ export function loadState(settings: FocusSettings): FocusState {
   if (!saved || !modes.includes(saved.mode) || !statuses.includes(saved.status)) {
     return initialState(settings);
   }
-  return { ...initialState(settings), ...saved };
+  return { ...initialState(settings), ...saved, plan: validPlan(saved.plan) };
 }
 
 export function saveState(s: FocusState): void {
@@ -140,21 +151,34 @@ export function logSession(entry: FocusLogEntry): void {
   write(LOG_KEY, [...log, entry]);
 }
 
-// ---------- Splitting a task into sessions ----------
+// ---------- Planning sessions ----------
 
-/** Session counts offered for a task, each at least the minimum focus length. */
-export function sessionOptions(estimateMin: number): number[] {
-  const options: number[] = [];
-  for (let n = 1; n <= MAX_SESSIONS; n++) {
-    if (n === 1 || estimateMin / n >= LIMITS.focus.min) options.push(n);
-  }
-  return options;
+/** The most sessions allowed: each must be at least the minimum focus length. */
+export function maxSessions(estimateMin?: number): number {
+  if (!estimateMin) return MAX_SESSIONS;
+  return Math.max(1, Math.min(MAX_SESSIONS, Math.floor(estimateMin / LIMITS.focus.min)));
 }
 
-/** The fewest sessions that keep each one within the preferred focus length. */
-export function defaultSessions(estimateMin: number, focusMin: number, options: number[]): number {
-  const wanted = Math.max(1, Math.ceil(estimateMin / Math.max(focusMin, 1)));
-  return options.find((n) => n >= wanted) ?? options[options.length - 1];
+function clampSessions(n: number, estimateMin?: number): number {
+  const v = Math.round(Number(n));
+  if (!Number.isFinite(v)) return 1;
+  return Math.min(maxSessions(estimateMin), Math.max(1, v));
+}
+
+/** Fewest sessions that keep each one within the preferred focus length. */
+export function defaultSessions(task: Task | undefined, settings: FocusSettings): number {
+  const estimate = task?.estimateMinutes;
+  if (!estimate) return 1;
+  return clampSessions(Math.ceil(estimate / Math.max(settings.focusMin, 1)), estimate);
+}
+
+export function makePlan(task: Task | undefined, sessions: number, settings: FocusSettings): Plan {
+  const estimate = task?.estimateMinutes;
+  const n = clampSessions(sessions, estimate);
+  if (task && estimate) {
+    return { taskId: task.id, sessions: n, totalMin: estimate, fixedTotal: true };
+  }
+  return { taskId: task?.id ?? null, sessions: n, totalMin: n * settings.focusMin, fixedTotal: false };
 }
 
 /** The saved plan if it still fits the task, otherwise a fresh default. */
@@ -162,54 +186,49 @@ export function resolvePlan(
   task: Task | undefined,
   saved: Plan | null | undefined,
   settings: FocusSettings
-): Plan | null {
-  const estimateMin = task?.estimateMinutes;
-  if (!task || !estimateMin) return null;
-  const options = sessionOptions(estimateMin);
+): Plan {
+  const id = task?.id ?? null;
+  const fixed = Boolean(task?.estimateMinutes);
   if (
     saved &&
-    saved.taskId === task.id &&
-    saved.estimateMin === estimateMin &&
-    options.includes(saved.sessions)
+    saved.taskId === id &&
+    saved.fixedTotal === fixed &&
+    (!fixed || saved.totalMin === task?.estimateMinutes)
   ) {
-    return saved;
+    return makePlan(task, saved.sessions, settings);
   }
-  return {
-    taskId: task.id,
-    estimateMin,
-    sessions: defaultSessions(estimateMin, settings.focusMin, options),
-  };
+  return makePlan(task, defaultSessions(task, settings), settings);
 }
 
 export function planSessionMs(plan: Plan): number {
-  return Math.round((plan.estimateMin * 60000) / plan.sessions);
+  return Math.round((plan.totalMin * 60000) / plan.sessions);
 }
 
 /** "15 min" or "22m 30s". */
-export function formatSessionLength(estimateMin: number, sessions: number): string {
-  const totalSec = Math.round((estimateMin * 60) / sessions);
+export function formatSessionLength(totalMin: number, sessions: number): string {
+  const totalSec = Math.round((totalMin * 60) / sessions);
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   if (s === 0) return `${m} min`;
   return m === 0 ? `${s}s` : `${m}m ${s}s`;
 }
 
-/** A long break after every Nth session, a short one otherwise. */
+/** The break we suggest after a session: long after every Nth, short otherwise. */
 export function breakAfter(session: number, settings: FocusSettings): "short" | "long" {
   return session % settings.cycle === 0 ? "long" : "short";
 }
 
-export function planSummary(estimateMin: number, sessions: number, settings: FocusSettings) {
+export function planSummary(plan: Plan, settings: FocusSettings) {
   let shorts = 0;
   let longs = 0;
-  for (let k = 1; k < sessions; k++) {
+  for (let k = 1; k < plan.sessions; k++) {
     if (breakAfter(k, settings) === "long") longs++;
     else shorts++;
   }
   return {
     shorts,
     longs,
-    totalMin: estimateMin + shorts * settings.shortMin + longs * settings.longMin,
+    withBreaksMin: plan.totalMin + shorts * settings.shortMin + longs * settings.longMin,
   };
 }
 
@@ -224,9 +243,10 @@ export function describeBreaks(shorts: number, longs: number): string {
 
 export function afterCompletion(state: FocusState, settings: FocusSettings): FocusState {
   const plan = state.plan ?? null;
+  const sessionsTotal = plan ? plan.sessions : 1;
 
   if (state.mode === "focus") {
-    if (plan && state.session >= plan.sessions) {
+    if (state.session >= sessionsTotal) {
       const total = modeMs("focus", settings);
       return {
         mode: "focus",
@@ -234,18 +254,17 @@ export function afterCompletion(state: FocusState, settings: FocusSettings): Foc
         status: "idle",
         taskId: state.taskId,
         plan: null,
-        planDone: plan.taskId,
+        planDone: plan?.taskId ?? undefined,
         totalMs: total,
         remainingMs: total,
-        notice: `All ${plan.sessions} ${plan.sessions === 1 ? "session" : "sessions"} done. Nice work.`,
+        notice:
+          sessionsTotal === 1
+            ? "Focus session complete. Nice work."
+            : `All ${sessionsTotal} sessions done. Nice work.`,
       };
     }
 
-    const mode: FocusMode = plan
-      ? breakAfter(state.session, settings)
-      : state.session >= settings.cycle
-        ? "long"
-        : "short";
+    const mode = breakAfter(state.session, settings);
     const total = modeMs(mode, settings);
     return {
       mode,
@@ -255,17 +274,12 @@ export function afterCompletion(state: FocusState, settings: FocusSettings): Foc
       plan,
       totalMs: total,
       remainingMs: total,
-      notice: `Focus session complete. Time for a ${Math.round(total / 60000)}-minute break.`,
+      notice: `Session ${state.session} of ${sessionsTotal} complete. Choose your break.`,
     };
   }
 
   // A break just ended.
-  const sessionsTotal = plan ? plan.sessions : settings.cycle;
-  const session = plan
-    ? Math.min(state.session + 1, sessionsTotal)
-    : state.mode === "long" || state.session >= settings.cycle
-      ? 1
-      : state.session + 1;
+  const session = Math.min(state.session + 1, sessionsTotal);
   const total = modeMs("focus", settings);
   return {
     mode: "focus",

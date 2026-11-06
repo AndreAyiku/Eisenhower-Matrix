@@ -9,9 +9,19 @@ interface Props {
   max: number;
   unit?: string;
   onChange: (value: number) => void;
+  onClamp?: (typed: number, snapped: number) => void;
 }
 
-export default function NumberStepper({ label, hint, value, min, max, unit, onChange }: Props) {
+export default function NumberStepper({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  unit,
+  onChange,
+  onClamp,
+}: Props) {
   const [text, setText] = useState<string | null>(null);
   const clamp = (n: number) => Math.min(max, Math.max(min, n));
 
@@ -23,7 +33,12 @@ export default function NumberStepper({ label, hint, value, min, max, unit, onCh
   };
 
   const commit = () => {
-    if (text !== null && text !== "") onChange(clamp(Number(text)));
+    if (text !== null && text !== "") {
+      const typed = Number(text);
+      const snapped = clamp(typed);
+      onChange(snapped);
+      if (snapped !== typed) onClamp?.(typed, snapped);
+    }
     setText(null);
   };
 

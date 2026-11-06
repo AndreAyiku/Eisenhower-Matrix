@@ -72,7 +72,7 @@ export default function FocusSettingsSheet({ settings, onSave, onClose }: Props)
           onChange={(n) => setDraft({ ...draft, longMin: n })}
         />
         <SelectField
-          label="Focus sessions before a long break"
+          label="Suggest a long break after every"
           value={draft.cycle}
           options={CYCLE}
           format={(n) => `${n} sessions`}

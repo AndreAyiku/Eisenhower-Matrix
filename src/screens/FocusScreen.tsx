@@ -1,42 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { ArrowLeft, Pause, Play, ShieldCheck, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Pause,
+  Play,
+  ShieldCheck,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import AppHeader from "../components/AppHeader";
 import BottomNav from "../components/BottomNav";
 import { FocusRing, SessionDots } from "../components/FocusVisuals";
 import FocusSettingsSheet from "../components/FocusSettingsSheet";
-import SegmentedControl from "../components/SegmentedControl";
+import NumberStepper from "../components/NumberStepper";
 import TaskPickerSheet from "../components/TaskPickerSheet";
 import { useFocus } from "../hooks/useFocus";
 import { formatEstimate } from "../lib/format";
 import {
+  LIMITS,
+  MAX_SESSIONS,
   breakAfter,
   defaultTask,
   describeBreaks,
   formatClock,
   formatElapsed,
   formatSessionLength,
+  makePlan,
+  maxSessions,
   modeMs,
   planSessionMs,
   planSummary,
   resolvePlan,
-  sessionOptions,
-  type FocusMode,
+  type Plan,
 } from "../lib/focus";
 import { QUADRANTS, quadrantOf } from "../lib/quadrants";
 import { useTasks } from "../store/tasksContext";
-
-const MODE_LABEL: Record<FocusMode, string> = {
-  focus: "Focus",
-  short: "Short break",
-  long: "Long break",
-};
-const LABEL_MODE: Record<string, FocusMode> = {
-  Focus: "focus",
-  "Short break": "short",
-  "Long break": "long",
-};
-const TABS = Object.values(MODE_LABEL);
 
 export default function FocusScreen() {
   const {
@@ -49,7 +47,7 @@ export default function FocusScreen() {
     resume,
     end,
     skipBreak,
-    setMode,
+    chooseBreak,
     setTask,
     choosePlan,
     resetPlan,
@@ -62,6 +60,7 @@ export default function FocusScreen() {
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [snapNote, setSnapNote] = useState<string | null>(null);
   const closePicker = useCallback(() => setPickerOpen(false), []);
   const closeAdjust = useCallback(() => setAdjustOpen(false), []);
 
@@ -113,23 +112,23 @@ export default function FocusScreen() {
   const quadrant = activeTask
     ? QUADRANTS.find((q) => q.id === quadrantOf(activeTask))
     : undefined;
+  const estimate = activeTask?.estimateMinutes;
 
   const running = state.status !== "idle";
   const isFocus = state.mode === "focus";
 
-  // The plan is frozen while a session runs, and follows the task otherwise.
-  const livePlan = running ? (state.plan ?? null) : resolvePlan(activeTask, state.plan, settings);
-  const sessionsTotal = livePlan ? livePlan.sessions : settings.cycle;
+  // The plan is frozen while a timer runs, and follows the task otherwise.
+  const idlePlan = resolvePlan(activeTask, state.plan, settings);
+  const plan: Plan | null = running ? (state.plan ?? null) : idlePlan;
+  const sessionsTotal = plan ? plan.sessions : 1;
   const session = Math.min(Math.max(state.session, 1), sessionsTotal);
-  const planLength = livePlan ? formatSessionLength(livePlan.estimateMin, livePlan.sessions) : null;
+  const planLength = plan ? formatSessionLength(plan.totalMin, plan.sessions) : "";
 
-  const modeTotalMs = modeMs(state.mode, settings);
-  const idleTotalMs = isFocus && livePlan ? planSessionMs(livePlan) : modeTotalMs;
+  const idleTotalMs = isFocus ? planSessionMs(idlePlan) : modeMs(state.mode, settings);
   const displayTotalMs = running ? totalMs : idleTotalMs;
   const displayRemainingMs = running ? remainingMs : idleTotalMs;
   const elapsedMs = displayTotalMs - displayRemainingMs;
   const progress = displayTotalMs > 0 ? elapsedMs / displayTotalMs : 0;
-  const modeMin = Math.round(modeTotalMs / 60000);
 
   const goBack = () =>
     location.key !== "default" ? navigate(-1) : navigate("/tasks", { replace: true });
@@ -228,24 +227,44 @@ export default function FocusScreen() {
   }
 
   // ---------- Ready ----------
-  const showSplit = isFocus && livePlan !== null && session === 1;
-  const summary = livePlan
-    ? planSummary(livePlan.estimateMin, livePlan.sessions, settings)
-    : null;
+  const suggested = breakAfter(session, settings);
+  const summary = planSummary(idlePlan, settings);
+  const maxN = maxSessions(estimate);
+  const showSessions = isFocus && session === 1;
 
-  let sessionLine: string;
-  if (!isFocus) {
-    sessionLine = `After session ${session} of ${sessionsTotal}`;
-  } else if (livePlan) {
-    const last = session >= livePlan.sessions;
-    const breakMin = breakAfter(session, settings) === "long" ? settings.longMin : settings.shortMin;
-    sessionLine =
-      `Session ${session} of ${livePlan.sessions} · ${planLength}${livePlan.sessions > 1 ? " each" : ""}` +
-      (last ? "" : ` · ${breakMin}-minute break afterwards`);
-  } else {
-    const breakMin = session >= settings.cycle ? settings.longMin : settings.shortMin;
-    sessionLine = `Session ${session} of ${settings.cycle} · ${breakMin}-minute break afterwards`;
-  }
+  const rhythm = [
+    idlePlan.fixedTotal ? null : `${settings.focusMin} min focus`,
+    `${settings.shortMin} min short`,
+    `${settings.longMin} min long`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const sessionLine = isFocus
+    ? `Session ${session} of ${sessionsTotal} · ${planLength}${sessionsTotal > 1 ? " each" : ""}`
+    : `After session ${session} of ${sessionsTotal}`;
+
+  const stepperHint =
+    estimate && maxN < MAX_SESSIONS
+      ? `Up to ${maxN} for this task: each session needs at least ${LIMITS.focus.min} minutes.`
+      : `Choose 1 to ${maxN} sessions.`;
+
+  const summaryText =
+    idlePlan.sessions === 1
+      ? `One ${planLength} session. No breaks needed.`
+      : `${idlePlan.sessions} sessions of ${planLength} each · ${describeBreaks(summary.shorts, summary.longs)} suggested · about ${formatEstimate(summary.withBreaksMin)} with breaks`;
+
+  const handleClamp = (typed: number, snapped: number) => {
+    if (typed > snapped) {
+      setSnapNote(
+        estimate
+          ? `${typed} sessions is too many: each session needs at least ${LIMITS.focus.min} minutes, so the most for a ${formatEstimate(estimate)} task is ${snapped}.`
+          : `The most you can plan is ${snapped} sessions.`
+      );
+    } else {
+      setSnapNote("You need at least 1 session.");
+    }
+  };
 
   const doneTask = state.planDone
     ? tasks.find((t) => t.id === state.planDone && !t.completed)
@@ -256,11 +275,13 @@ export default function FocusScreen() {
       <AppHeader eyebrow="Focus / Pomodoro" title="One thing at a time." />
 
       <main className="content focus-content">
-        <SegmentedControl
-          tabs={TABS}
-          active={MODE_LABEL[state.mode]}
-          onChange={(label) => setMode(LABEL_MODE[label])}
-        />
+        <div className="rhythm">
+          <span className="rhythm-text">{rhythm}</span>
+          <button type="button" className="adjust-btn" onClick={() => setAdjustOpen(true)}>
+            <SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true" />
+            Adjust
+          </button>
+        </div>
 
         {state.notice && (
           <p className="focus-notice" role="status">
@@ -301,7 +322,7 @@ export default function FocusScreen() {
 
         <p className="session-line">
           {sessionLine}
-          {isFocus && livePlan && session > 1 && (
+          {isFocus && session > 1 && (
             <>
               {" · "}
               <button type="button" className="link-btn" onClick={resetPlan}>
@@ -311,73 +332,92 @@ export default function FocusScreen() {
           )}
         </p>
 
-        {isFocus && (
-          <section className="working-card" aria-label="Working on">
-            <div className="working-top">
-              <span className="working-label">Working on</span>
-              {quadrant && (
-                <span className="chip chip-q" data-q={quadrant.id}>
-                  {quadrant.label}
-                </span>
-              )}
-            </div>
-            <h2 className="working-title">{activeTask ? activeTask.title : "No specific task"}</h2>
-            <p className="working-next">
-              {activeTask
-                ? nextStep
-                  ? `Next: ${nextStep.title}`
-                  : "No smaller steps yet"
-                : "Free focus"}{" "}
-              ·{" "}
-              <button type="button" className="link-btn" onClick={() => setPickerOpen(true)}>
-                Change task
-              </button>
-            </p>
-          </section>
-        )}
-
-        {isFocus && !livePlan && activeTask && (
-          <p className="split-hint">
-            Give this task an estimated time to split it into sessions.
-          </p>
-        )}
-
-        {showSplit && livePlan && summary && (
-          <section className="split" aria-label="Split into sessions">
-            <h3 className="split-title">Split it into sessions</h3>
-            <div className="split-grid" role="radiogroup" aria-label="Number of sessions">
-              {sessionOptions(livePlan.estimateMin).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  role="radio"
-                  aria-checked={n === livePlan.sessions}
-                  className={`split-opt${n === livePlan.sessions ? " on" : ""}`}
-                  onClick={() => choosePlan({ ...livePlan, sessions: n })}
-                >
-                  <span className="split-n">
-                    {n} {n === 1 ? "session" : "sessions"}
+        {isFocus ? (
+          <>
+            <section className="working-card" aria-label="Working on">
+              <div className="working-top">
+                <span className="working-label">Working on</span>
+                {quadrant && (
+                  <span className="chip chip-q" data-q={quadrant.id}>
+                    {quadrant.label}
                   </span>
-                  <span className="split-len">
-                    {formatSessionLength(livePlan.estimateMin, n)}
-                    {n === 1 ? "" : " each"}
-                  </span>
+                )}
+              </div>
+              <h2 className="working-title">
+                {activeTask ? activeTask.title : "No specific task"}
+              </h2>
+              <p className="working-next">
+                {activeTask
+                  ? nextStep
+                    ? `Next: ${nextStep.title}`
+                    : "No smaller steps yet"
+                  : "Free focus"}{" "}
+                ·{" "}
+                <button type="button" className="link-btn" onClick={() => setPickerOpen(true)}>
+                  Change task
                 </button>
-              ))}
+              </p>
+            </section>
+
+            {showSessions && (
+              <section className="sessions-card" aria-label="Sessions">
+                <NumberStepper
+                  label="Number of sessions"
+                  hint={stepperHint}
+                  value={idlePlan.sessions}
+                  min={1}
+                  max={maxN}
+                  unit={idlePlan.sessions === 1 ? "session" : "sessions"}
+                  onChange={(n) => {
+                    setSnapNote(null);
+                    choosePlan(makePlan(activeTask, n, settings));
+                  }}
+                  onClamp={handleClamp}
+                />
+                {snapNote && (
+                  <p className="snap-note" role="status">
+                    {snapNote}
+                  </p>
+                )}
+                <p className="split-summary">{summaryText}</p>
+                {!idlePlan.fixedTotal && (
+                  <p className="split-hint">
+                    {activeTask
+                      ? "This task has no estimated time, so each session is your focus length. Add an estimate to the task to split its time instead."
+                      : "No task selected, so each session is your focus length."}
+                  </p>
+                )}
+              </section>
+            )}
+          </>
+        ) : (
+          <section className="break-choice" aria-label="Choose your break">
+            <div className="break-grid" role="radiogroup" aria-label="Break length">
+              {(["short", "long"] as const).map((kind) => {
+                const min = kind === "short" ? settings.shortMin : settings.longMin;
+                const on = state.mode === kind;
+                return (
+                  <button
+                    key={kind}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    className={`break-opt${on ? " on" : ""}`}
+                    onClick={() => chooseBreak(kind)}
+                  >
+                    {suggested === kind && <span className="break-tag">Suggested</span>}
+                    <span className="break-name">
+                      {kind === "short" ? "Short break" : "Long break"}
+                    </span>
+                    <span className="break-len">{min} min</span>
+                  </button>
+                );
+              })}
             </div>
-            <p className="split-summary">
-              {livePlan.sessions === 1
-                ? `One ${planLength} session. No breaks.`
-                : `${livePlan.sessions} sessions of ${planLength} · ${describeBreaks(summary.shorts, summary.longs)} · ${formatEstimate(summary.totalMin)} in all`}
-            </p>
           </section>
         )}
 
-        <button
-          type="button"
-          className="primary-btn"
-          onClick={() => begin(livePlan, activeTask?.id ?? null)}
-        >
+        <button type="button" className="primary-btn" onClick={() => begin(idlePlan, activeTask?.id ?? null)}>
           <Play size={20} strokeWidth={1.75} aria-hidden="true" />
           {isFocus ? "Begin focus" : "Begin break"}
         </button>
@@ -387,19 +427,6 @@ export default function FocusScreen() {
             Skip break
           </button>
         )}
-
-        <div className="focus-foot">
-          <span>
-            {isFocus
-              ? livePlan
-                ? `${formatEstimate(livePlan.estimateMin)} planned`
-                : `${settings.focusMin} min focus · ${settings.shortMin} min break`
-              : `${modeMin} min break · ${settings.focusMin} min focus`}
-          </span>
-          <button type="button" className="text-btn" onClick={() => setAdjustOpen(true)}>
-            Adjust
-          </button>
-        </div>
       </main>
 
       <BottomNav />
