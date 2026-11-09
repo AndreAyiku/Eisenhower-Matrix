@@ -5,6 +5,7 @@ import {
   disablePush,
   enablePush,
   getPushStatus,
+  postJobs,
   sendTestPush,
   type PushResult,
   type PushStatus,
@@ -134,6 +135,29 @@ export default function NotificationsSheet({ onClose }: Props) {
               onClick={() => void run(sendTestPush, "Test sent. It should arrive in a few seconds.")}
             >
               Send a test notification
+            </button>
+                        <button
+              type="button"
+              className="secondary-btn"
+              disabled={busy}
+              onClick={() =>
+                void run(
+                  () =>
+                    postJobs("test", [
+                      {
+                        id: "test",
+                        at: Date.now() + 60_000,
+                        title: "Test reminder",
+                        body: "This was scheduled a minute ago.",
+                        url: "/today",
+                        tag: "test-reminder",
+                      },
+                    ]),
+                  "Scheduled. Lock your phone: it should arrive within a minute or two."
+                )
+              }
+            >
+              Send a reminder in 1 minute
             </button>
             <button
               type="button"

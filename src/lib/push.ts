@@ -8,6 +8,20 @@ export type PushStatus =
 
 export type PushResult = { ok: true } | { ok: false; error: string };
 
+export type JobKind = "task" | "timer" | "test";
+
+export interface ReminderJob {
+  id: string;
+  at: number; // epoch milliseconds
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+}
+
+/** Fired when notifications are switched on or off, so reminders can be (re)synced. */
+export const PUSH_CHANGED = "ff-push-changed";
+
 const VAPID_KEY: string | undefined = import.meta.env.VITE_VAPID_PUBLIC_KEY || undefined;
 
 export function isIOS(): boolean {
@@ -40,7 +54,8 @@ function urlBase64ToUint8Array(base64: string) {
   return output;
 }
 
-async function currentSubscription(): Promise<PushSubscription | null> {
+export async function currentSubscription(): Promise<PushSubscription | null> {
+  if (!("serviceWorker" in navigator)) return null;
   const reg = await navigator.serviceWorker.getRegistration();
   return reg ? reg.pushManager.getSubscription() : null;
 }
@@ -94,6 +109,7 @@ export async function enablePush(): Promise<PushResult> {
         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY),
       });
     }
+    window.dispatchEvent(new Event(PUSH_CHANGED));
     return { ok: true };
   } catch (err) {
     return {
@@ -103,10 +119,27 @@ export async function enablePush(): Promise<PushResult> {
   }
 }
 
+/** Asks the server to forget this device. Best effort: failures are ignored. */
+async function forgetDevice(sub: PushSubscription): Promise<void> {
+  try {
+    await fetch("/api/sync", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: sub.toJSON() }),
+    });
+  } catch {
+    // offline or the server isn’t reachable
+  }
+}
+
 export async function disablePush(): Promise<PushResult> {
   try {
     const sub = await currentSubscription();
-    await sub?.unsubscribe();
+    if (sub) {
+      await forgetDevice(sub);
+      await sub.unsubscribe();
+    }
+    window.dispatchEvent(new Event(PUSH_CHANGED));
     return { ok: true };
   } catch {
     return { ok: false, error: "Couldn’t turn notifications off." };
@@ -138,6 +171,30 @@ export async function sendTestPush(): Promise<PushResult> {
       return { ok: false, error: "The server is missing its keys. Check the Vercel settings." };
     }
     return { ok: false, error: `The server couldn’t send it (error ${res.status}).` };
+  } catch {
+    return { ok: false, error: "Couldn’t reach the server. Check your connection." };
+  }
+}
+
+/** Replaces this device's scheduled notifications of one kind on the server. */
+export async function postJobs(kind: JobKind, jobs: ReminderJob[]): Promise<PushResult> {
+  const sub = await currentSubscription();
+  if (!sub) return { ok: false, error: "Turn notifications on first." };
+
+  try {
+    const res = await fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: sub.toJSON(), kind, jobs }),
+    });
+    if (res.ok) return { ok: true };
+    if (res.status === 404) {
+      return { ok: false, error: "Reminders only sync on the deployed site, not locally." };
+    }
+    if (res.status === 503) {
+      return { ok: false, error: "The reminder storage isn’t set up on the server yet." };
+    }
+    return { ok: false, error: `The server couldn’t save the reminders (error ${res.status}).` };
   } catch {
     return { ok: false, error: "Couldn’t reach the server. Check your connection." };
   }

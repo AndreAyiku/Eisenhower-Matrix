@@ -5,8 +5,11 @@ import MatrixScreen from "./screens/MatrixScreen";
 import TaskDetailScreen from "./screens/TaskDetailScreen";
 import CalendarScreen from "./screens/CalendarScreen";
 import FocusScreen from "./screens/FocusScreen";
+import { useReminderSync } from "./hooks/useReminderSync";
 
 export default function App() {
+  useReminderSync();
+
   return (
     <Routes>
       <Route element={<TabLayout />}>
