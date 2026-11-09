@@ -2251,6 +2251,43 @@ button.primary-btn {
 .big-row.done .big-title {
   color: var(--text-2);
   text-decoration: line-through;
+}/* ---------- Notifications sheet ---------- */
+.notif-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.notif-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.secondary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.secondary-btn:disabled {
+  opacity: 0.45;
 }
 
 .big-dot {

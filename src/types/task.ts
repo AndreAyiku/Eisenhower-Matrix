@@ -15,6 +15,7 @@ export interface Task {
   important: boolean;
   urgent: boolean;
   completed: boolean;
+  completedAt?: string; // set automatically when a task is marked done
   tags: string[];
   project?: string;
   dueDate?: string; // "YYYY-MM-DD" (local date); missing = "Someday"

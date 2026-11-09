@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, CalendarDays, Clock, Plus, Sparkles, X } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, Plus, Flag, X } from "lucide-react";
 import AutoTextarea from "./AutoTextarea";
 import Switch from "./Switch";
 import { formatLocalDateTime, fromLocalInput } from "../lib/dates";
@@ -173,8 +173,8 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
         <section className="auto-card" aria-label="Automatic priority">
           <div className="auto-head">
             <span className="auto-title">
-              <Sparkles size={18} strokeWidth={1.75} aria-hidden="true" />
-              {manual ? "Your priority" : "Automatic priority"}
+              <Flag size={18} strokeWidth={1.75} aria-hidden="true" />
+              {manual ? "Your priority" : "Suggested priority"}
             </span>
             <span className="chip chip-q" data-q={quadrant.id}>
               {quadrant.label}
