@@ -2297,3 +2297,25 @@ button.primary-btn {
   border-radius: 50%;
   background: var(--q-color);
 }
+/* ---------- Reminder field and priority header ---------- */
+.field-box.disabled {
+  opacity: 0.55;
+}
+
+.field-box.disabled .prop-native {
+  cursor: not-allowed;
+}
+
+.priority-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.row-hint {
+  margin: -2px 0 8px 32px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-2);
+}

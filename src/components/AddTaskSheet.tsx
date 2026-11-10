@@ -1,19 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, CalendarDays, Clock, Plus, Flag, X } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { CalendarDays, Clock, Plus, X } from "lucide-react";
 import AutoTextarea from "./AutoTextarea";
+import ReminderField from "./ReminderField";
 import Switch from "./Switch";
+import { useSheet } from "../hooks/useSheet";
 import { formatLocalDateTime, fromLocalInput } from "../lib/dates";
 import { estimateOptions, formatEstimate } from "../lib/format";
 import { newId } from "../lib/id";
 import { openPicker } from "../lib/picker";
-import {
-  flagsLabel,
-  suggestionReason,
-  suggestPriority,
-  type PriorityFlags,
-} from "../lib/priority";
+import { suggestionReason, suggestPriority, type PriorityFlags } from "../lib/priority";
 import { QUADRANTS, quadrantOf } from "../lib/quadrants";
 import { useTasks } from "../store/tasksContext";
+import type { ReminderRule } from "../types/task";
 
 interface Props {
   onClose: () => void;
@@ -21,34 +19,18 @@ interface Props {
 }
 
 export default function AddTaskSheet({ onClose, initialDue }: Props) {
+  useSheet(onClose);
   const { addTask } = useTasks();
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
   const [dueLocal, setDueLocal] = useState(initialDue ?? "");
   const [estimate, setEstimate] = useState(0);
+  const [reminder, setReminder] = useState<ReminderRule | undefined>(undefined);
   const [manual, setManual] = useState<PriorityFlags | null>(null);
-  const [adjusting, setAdjusting] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
 
   const due = fromLocalInput(dueLocal);
-  const suggestion = suggestPriority(due.date);
-  const flags = manual ?? suggestion;
+  const flags = manual ?? suggestPriority(due.date);
   const quadrant = QUADRANTS.find((q) => q.id === quadrantOf(flags))!;
-  const hint = manual
-    ? `You set this priority: ${flagsLabel(manual)}.`
-    : `${suggestionReason(due.date)} Suggested: ${flagsLabel(suggestion)}.`;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -65,6 +47,7 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
       tags: [],
       dueDate: due.date,
       dueTime: due.time,
+      reminder: due.date ? reminder : undefined,
       estimateMinutes: estimate || undefined,
       subtasks: [],
       createdAt: now,
@@ -128,7 +111,10 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
                   type="button"
                   className="field-clear"
                   aria-label="Clear due date"
-                  onClick={() => setDueLocal("")}
+                  onClick={() => {
+                    setDueLocal("");
+                    setReminder(undefined);
+                  }}
                 >
                   <X size={16} strokeWidth={1.75} />
                 </button>
@@ -170,57 +156,49 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
           </div>
         </div>
 
-        <section className="auto-card" aria-label="Automatic priority">
-          <div className="auto-head">
-            <span className="auto-title">
-              <Flag size={18} strokeWidth={1.75} aria-hidden="true" />
-              {manual ? "Your priority" : "Suggested priority"}
-            </span>
+        <ReminderField
+          variant="field"
+          dueDate={due.date}
+          dueTime={due.time}
+          value={reminder}
+          onChange={setReminder}
+        />
+
+        <section className="field" aria-label="Priority">
+          <div className="priority-head">
+            <span className="field-label">Priority</span>
             <span className="chip chip-q" data-q={quadrant.id}>
               {quadrant.label}
             </span>
           </div>
-          <p className="auto-text">{hint}</p>
-          <button
-            type="button"
-            className="auto-link"
-            aria-expanded={adjusting}
-            onClick={() => setAdjusting((v) => !v)}
-          >
-            Adjust importance &amp; urgency
-            <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
-          </button>
-
-          {adjusting && (
-            <div className="adjust-panel">
-              <div className="priority-row">
-                <div className="priority-text">
-                  <span className="priority-label">Important</span>
-                  <span className="priority-hint">Moves your goals forward</span>
-                </div>
-                <Switch
-                  label="Important"
-                  checked={flags.important}
-                  onChange={(v) => setManual({ ...flags, important: v })}
-                />
+          <div className="priority-card">
+            <div className="priority-row">
+              <div className="priority-text">
+                <span className="priority-label">Important</span>
+                <span className="priority-hint">Moves your goals forward</span>
               </div>
-              <div className="priority-row">
-                <div className="priority-text">
-                  <span className="priority-label">Urgent</span>
-                  <span className="priority-hint">Needs attention soon</span>
-                </div>
-                <Switch
-                  label="Urgent"
-                  checked={flags.urgent}
-                  onChange={(v) => setManual({ ...flags, urgent: v })}
-                />
-              </div>
-              {manual && (
-                <button type="button" className="auto-link" onClick={() => setManual(null)}>
-                  Use automatic priority
-                </button>
-              )}
+              <Switch
+                label="Important"
+                checked={flags.important}
+                onChange={(v) => setManual({ ...flags, important: v })}
+              />
             </div>
+            <div className="priority-row">
+              <div className="priority-text">
+                <span className="priority-label">Urgent</span>
+                <span className="priority-hint">Needs attention soon</span>
+              </div>
+              <Switch
+                label="Urgent"
+                checked={flags.urgent}
+                onChange={(v) => setManual({ ...flags, urgent: v })}
+              />
+            </div>
+          </div>
+          {!manual && (
+            <span className="field-hint">
+              {suggestionReason(due.date)} We set these for you. Change them any time.
+            </span>
           )}
         </section>
 

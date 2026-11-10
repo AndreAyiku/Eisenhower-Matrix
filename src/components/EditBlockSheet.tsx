@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowUpRight,
-  Bell,
   CalendarDays,
   CircleCheck,
   Clock,
@@ -11,23 +10,15 @@ import {
   X,
 } from "lucide-react";
 import PropertyRow from "./PropertyRow";
+import ReminderField from "./ReminderField";
 import { useSheet } from "../hooks/useSheet";
 import { DEFAULT_BLOCK_MIN, defaultDue, formatDayLong, parseISO } from "../lib/calendar";
-import { formatLocalDateTime, toISODate } from "../lib/dates";
+import { toISODate } from "../lib/dates";
 import { estimateOptions, formatDurationLong } from "../lib/format";
 import { openPicker } from "../lib/picker";
-import {
-  CALENDAR_OPTIONS,
-  REMINDER_OPTIONS,
-  formatOffset,
-  minToTime,
-  reminderOffset,
-  scheduleStatus,
-  shiftLocal,
-  timeToMin,
-} from "../lib/schedule";
+import { CALENDAR_OPTIONS, minToTime, scheduleStatus, timeToMin } from "../lib/schedule";
 import { useTasks } from "../store/tasksContext";
-import type { Task } from "../types/task";
+import type { ReminderRule, Task } from "../types/task";
 
 interface Props {
   task: Task;
@@ -50,8 +41,7 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
   );
   const [end, setEnd] = useState(() => minToTime(timeToMin(start) + initialDuration));
   const [calendar, setCalendar] = useState(task.calendar ?? "");
-  const [offset, setOffset] = useState<number | null>(() => reminderOffset(task));
-  const [touched, setTouched] = useState(false);
+  const [reminder, setReminder] = useState<ReminderRule | undefined>(task.reminder);
 
   const startMin = timeToMin(start);
   const endMin = timeToMin(end);
@@ -62,20 +52,6 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
     () => scheduleStatus({ taskId: task.id, date, startMin, endMin, tasks }),
     [task.id, date, startMin, endMin, tasks]
   );
-
-  const keepCustom = !touched && Boolean(task.reminderAt) && offset === null;
-  const reminderValue = keepCustom ? "keep" : offset === null ? "none" : String(offset);
-  const reminderText = keepCustom
-    ? formatLocalDateTime(task.reminderAt)
-    : offset === null
-      ? "None"
-      : formatOffset(offset);
-  const reminderOptions =
-    offset !== null && !REMINDER_OPTIONS.some((o) => o.minutes === offset)
-      ? [...REMINDER_OPTIONS, { minutes: offset, label: formatOffset(offset) }].sort(
-          (a, b) => a.minutes - b.minutes
-        )
-      : REMINDER_OPTIONS;
 
   const changeStart = (value: string) => {
     if (!value) return;
@@ -92,32 +68,25 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
     if (minutes > 0) setEnd(minToTime(startMin + minutes));
   };
 
-  const changeReminder = (value: string) => {
-    setTouched(true);
-    setOffset(value === "none" || value === "keep" ? null : Number(value));
-  };
-
   const save = () => {
     if (!valid) return;
-    let reminderAt = task.reminderAt;
-    if (touched) {
-      reminderAt = offset === null ? undefined : shiftLocal(date, start, -offset);
-    } else if (offset !== null) {
-      reminderAt = shiftLocal(date, start, -offset);
-    }
     updateTask(task.id, {
       dueDate: date,
       dueTime: start,
       estimateMinutes: duration,
       calendar: calendar || undefined,
-      reminderAt,
+      reminder,
     });
     onSaved?.(date);
     onClose();
   };
 
+  // Taking the time off keeps the day. Reminders "before the due time" no longer apply.
   const remove = () => {
-    updateTask(task.id, { dueTime: undefined, reminderAt: undefined });
+    updateTask(task.id, {
+      dueTime: undefined,
+      reminder: task.reminder?.type === "before" ? undefined : task.reminder,
+    });
     onClose();
   };
 
@@ -237,22 +206,13 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
             </select>
           </PropertyRow>
 
-          <PropertyRow icon={Bell} label="Reminder" value={reminderText}>
-            <select
-              className="prop-native"
-              aria-label="Reminder"
-              value={reminderValue}
-              onChange={(e) => changeReminder(e.target.value)}
-            >
-              {keepCustom && <option value="keep">{reminderText}</option>}
-              <option value="none">None</option>
-              {reminderOptions.map((o) => (
-                <option key={o.minutes} value={o.minutes}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </PropertyRow>
+          <ReminderField
+            variant="row"
+            dueDate={date}
+            dueTime={start}
+            value={reminder}
+            onChange={setReminder}
+          />
         </section>
 
         <p className={`status status-${status.tone}`} role="status">

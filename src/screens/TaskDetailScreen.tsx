@@ -1,16 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Bell, CalendarDays, Check, Play, Timer } from "lucide-react";
+import { ArrowLeft, CalendarDays, Play, Timer } from "lucide-react";
 import AutoTextarea from "../components/AutoTextarea";
 import PropertyRow from "../components/PropertyRow";
+import ReminderField from "../components/ReminderField";
 import SubtaskList from "../components/SubtaskList";
 import Switch from "../components/Switch";
-import {
-  formatDateTime,
-  formatLocalDateTime,
-  fromLocalInput,
-  toLocalInput,
-} from "../lib/dates";
+import { formatDateTime, fromLocalInput, toLocalInput } from "../lib/dates";
 import { estimateOptions, formatEstimate } from "../lib/format";
 import { openPicker } from "../lib/picker";
 import { QUADRANTS, quadrantOf } from "../lib/quadrants";
@@ -58,20 +54,10 @@ function TaskEditor({ stored }: { stored: Task }) {
   const location = useLocation();
 
   const [draft, setDraft] = useState<Task>(stored);
-  const [savedFlash, setSavedFlash] = useState(false);
-
-  useEffect(() => {
-    if (!savedFlash) return;
-    const t = setTimeout(() => setSavedFlash(false), 1800);
-    return () => clearTimeout(t);
-  }, [savedFlash]);
 
   const dirty = snapshot(draft) !== snapshot(stored);
 
-  const patch = (p: Partial<Task>) => {
-    setDraft((d) => ({ ...d, ...p }));
-    setSavedFlash(false);
-  };
+  const patch = (p: Partial<Task>) => setDraft((d) => ({ ...d, ...p }));
 
   const goBack = () =>
     location.key !== "default" ? navigate(-1) : navigate("/tasks", { replace: true });
@@ -87,10 +73,7 @@ function TaskEditor({ stored }: { stored: Task }) {
     goBack();
   };
 
-  const discard = () => {
-    setDraft(stored);
-    setSavedFlash(false);
-  };
+  const discard = () => setDraft(stored);
 
   const toggleDone = () => {
     const next = cleaned({ ...draft, completed: !draft.completed });
@@ -204,7 +187,7 @@ function TaskEditor({ stored }: { stored: Task }) {
             label="Due date"
             value={dueText}
             hasValue={Boolean(draft.dueDate)}
-            onClear={() => patch({ dueDate: undefined, dueTime: undefined })}
+            onClear={() => patch({ dueDate: undefined, dueTime: undefined, reminder: undefined })}
             clearLabel="Clear due date"
           >
             <input
@@ -220,23 +203,13 @@ function TaskEditor({ stored }: { stored: Task }) {
             />
           </PropertyRow>
 
-          <PropertyRow
-            icon={Bell}
-            label="Reminder"
-            value={formatLocalDateTime(draft.reminderAt)}
-            hasValue={Boolean(draft.reminderAt)}
-            onClear={() => patch({ reminderAt: undefined })}
-            clearLabel="Clear reminder"
-          >
-            <input
-              className="prop-native"
-              type="datetime-local"
-              aria-label="Reminder"
-              value={draft.reminderAt ?? ""}
-              onClick={openPicker}
-              onChange={(e) => patch({ reminderAt: e.target.value || undefined })}
-            />
-          </PropertyRow>
+          <ReminderField
+            variant="row"
+            dueDate={draft.dueDate}
+            dueTime={draft.dueTime}
+            value={draft.reminder}
+            onChange={(reminder) => patch({ reminder })}
+          />
         </section>
 
         <SubtaskList
@@ -245,13 +218,6 @@ function TaskEditor({ stored }: { stored: Task }) {
         />
 
         <div className="detail-footer">
-          {savedFlash && (
-            <p className="saved-note" role="status">
-              <Check size={14} strokeWidth={2.5} aria-hidden="true" />
-              Changes saved
-            </p>
-          )}
-
           {dirty ? (
             <>
               <button type="button" className="primary-btn" onClick={save}>

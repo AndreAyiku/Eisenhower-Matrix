@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { newId } from "../lib/id";
-import { SAMPLE_TASKS } from "../lib/sampleTasks";
+import { migrateTask } from "../lib/reminder";
 import type { Task } from "../types/task";
 import { TasksContext, type TasksContextValue } from "./tasksContext";
 
@@ -11,12 +11,22 @@ function load(): Task[] {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed as Task[];
+      if (Array.isArray(parsed)) {
+        return (parsed as (Task & { reminderAt?: string })[]).map((t) => migrateTask(t));
+      }
     }
   } catch {
-    // storage unavailable or corrupted: fall back to samples
+    // storage unavailable or unreadable: start empty
   }
-  return SAMPLE_TASKS;
+  return [];
+}
+
+function save(tasks: Task[]): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(tasks));
+  } catch {
+    // storage unavailable
+  }
 }
 
 function touch(task: Task, patch: Partial<Task>): Task {
@@ -34,14 +44,26 @@ interface Props {
 
 export default function TasksProvider({ children }: Props) {
   const [tasks, setTasks] = useState<Task[]>(load);
+  const latest = useRef(tasks);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(tasks));
-    } catch {
-      // storage unavailable
-    }
+    latest.current = tasks;
+    save(tasks);
   }, [tasks]);
+
+  // iOS can drop recent changes if the app is closed right away, so save again when leaving.
+  useEffect(() => {
+    const flush = () => save(latest.current);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, []);
 
   const value = useMemo<TasksContextValue>(
     () => ({
