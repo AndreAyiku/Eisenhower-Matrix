@@ -38,7 +38,7 @@ export function shiftLocal(date: string, time: string, deltaMin: number): string
 
 /** Minutes between the reminder and the start, or null if not applicable. */
 export function reminderOffset(
-  task: Pick<Task, "dueDate" | "dueTime" | "reminderAt">
+  task: Pick<Task, "dueDate" | "dueTime"> & { reminderAt?: string }
 ): number | null {
   if (!task.reminderAt || !task.dueDate || !task.dueTime) return null;
   const [y, m, d] = task.dueDate.split("-").map(Number);
