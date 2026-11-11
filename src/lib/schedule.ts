@@ -1,6 +1,7 @@
 import type { Task } from "../types/task";
 import { DEFAULT_BLOCK_MIN, fmtMin, parseISO } from "./calendar";
 import { toISODate } from "./dates";
+import { occursOn } from "./recurrence";
 
 export const WORK_HOURS = { startMin: 9 * 60, endMin: 17 * 60, days: [1, 2, 3, 4, 5] };
 
@@ -83,7 +84,7 @@ export function scheduleStatus({
   }
 
   const clashes = tasks
-    .filter((t) => t.id !== taskId && !t.completed && t.dueDate === date && t.dueTime)
+    .filter((t) => t.id !== taskId && !t.completed && Boolean(t.dueTime) && occursOn(t, date))
     .map((t) => {
       const s = timeToMin(t.dueTime!);
       return {

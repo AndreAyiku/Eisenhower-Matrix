@@ -1,5 +1,6 @@
 import type { Task } from "../types/task";
 import { toISODate } from "./dates";
+import { occursOn } from "./recurrence";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = [
@@ -56,13 +57,13 @@ function parseTime(time: string): number {
   return h * 60 + (m || 0);
 }
 
-export function blockFor(task: Task): Block | null {
-  if (!task.dueDate || !task.dueTime) return null;
+export function blockFor(task: Task, date: string): Block | null {
+  if (!task.dueTime || !occursOn(task, date)) return null;
   const startMin = parseTime(task.dueTime);
   const length = task.estimateMinutes ?? DEFAULT_BLOCK_MIN;
   return {
     task,
-    date: task.dueDate,
+    date,
     startMin,
     endMin: Math.min(startMin + length, 1440),
   };
@@ -71,14 +72,14 @@ export function blockFor(task: Task): Block | null {
 export function blocksForDay(tasks: Task[], date: string): Block[] {
   const result: Block[] = [];
   for (const task of tasks) {
-    const block = blockFor(task);
-    if (block && block.date === date) result.push(block);
+    const block = blockFor(task, date);
+    if (block) result.push(block);
   }
   return result.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
 }
 
 export function unscheduledForDay(tasks: Task[], date: string): Task[] {
-  return tasks.filter((t) => t.dueDate === date && !t.dueTime && !t.completed);
+  return tasks.filter((t) => !t.dueTime && !t.completed && occursOn(t, date));
 }
 
 /** Places overlapping blocks side by side. */

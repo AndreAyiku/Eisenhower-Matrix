@@ -54,7 +54,7 @@ export default function FocusScreen() {
     dismissNotice,
     updateSettings,
   } = useFocus();
-  const { tasks, updateTask } = useTasks();
+  const { tasks, completeTask } = useTasks();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -300,7 +300,7 @@ export default function FocusScreen() {
                 type="button"
                 className="session-btn primary"
                 onClick={() => {
-                  updateTask(doneTask.id, { completed: true });
+                  completeTask(doneTask.id);
                   dismissNotice();
                 }}
               >

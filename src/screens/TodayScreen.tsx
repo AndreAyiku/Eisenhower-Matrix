@@ -20,16 +20,21 @@ import { useTasks } from "../store/tasksContext";
 import type { Task } from "../types/task";
 
 export default function TodayScreen() {
-  const { tasks, updateTask } = useTasks();
+  const { tasks, updateTask, completeTask } = useTasks();
   const now = useNow();
   const today = toISODate(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  // Finished one-off tasks stay in place (struck through) until you leave this screen.
   const [kept, setKept] = useState<Set<string>>(() => new Set());
+  // Repeating tasks that were just marked done, as they were before, so they can be undone.
+  const [advanced, setAdvanced] = useState<Map<string, Task>>(() => new Map());
 
   const { done, total } = dayProgress(tasks, today);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const focused = focusedMinutesToday(today);
-  const big = bigThree(tasks, kept);
+  const view = tasks.map((t) => advanced.get(t.id) ?? t);
+  const big = bigThree(view, kept);
   const next = nextBlock(tasks, today, nowMin);
 
   const caption =
@@ -41,7 +46,29 @@ export default function TodayScreen() {
           ? "A little progress adds up."
           : "Start with one small thing.";
 
+  const isDone = (task: Task) => task.completed || advanced.has(task.id);
+
   const toggle = (task: Task) => {
+    const before = advanced.get(task.id);
+    if (before) {
+      updateTask(task.id, {
+        dueDate: before.dueDate,
+        dueTime: before.dueTime,
+        subtasks: before.subtasks,
+        lastDoneAt: before.lastDoneAt,
+      });
+      setAdvanced((prev) => {
+        const copy = new Map(prev);
+        copy.delete(task.id);
+        return copy;
+      });
+      return;
+    }
+    if (task.repeat && task.dueDate && !task.completed) {
+      setAdvanced((prev) => new Map(prev).set(task.id, task));
+      completeTask(task.id);
+      return;
+    }
     if (!task.completed) setKept((prev) => new Set(prev).add(task.id));
     updateTask(task.id, { completed: !task.completed });
   };
@@ -102,37 +129,38 @@ export default function TodayScreen() {
             <p className="cal-empty">You’re all caught up. Add a task from the Tasks tab.</p>
           ) : (
             <ul className="big-list">
-              {big.map((task) => (
-                <li
-                  key={task.id}
-                  className={`big-row${task.completed ? " done" : ""}`}
-                  data-q={quadrantOf(task)}
-                >
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={task.completed}
-                    aria-label={
-                      task.completed
-                        ? `Mark ${task.title} as not done`
-                        : `Mark ${task.title} as done`
-                    }
-                    className="big-check"
-                    onClick={() => toggle(task)}
+              {big.map((task) => {
+                const finished = isDone(task);
+                return (
+                  <li
+                    key={task.id}
+                    className={`big-row${finished ? " done" : ""}`}
+                    data-q={quadrantOf(task)}
                   >
-                    <span className={`check${task.completed ? " done" : ""}`}>
-                      {task.completed && (
-                        <Check size={15} strokeWidth={2.5} aria-hidden="true" />
-                      )}
-                    </span>
-                  </button>
-                  <Link className="big-main" to={`/tasks/${task.id}`}>
-                    <span className="big-title">{task.title}</span>
-                    <span className="big-meta">{taskMeta(task, today)}</span>
-                  </Link>
-                  <span className="big-dot" aria-hidden="true" />
-                </li>
-              ))}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={finished}
+                      aria-label={
+                        finished
+                          ? `Mark ${task.title} as not done`
+                          : `Mark ${task.title} as done`
+                      }
+                      className="big-check"
+                      onClick={() => toggle(task)}
+                    >
+                      <span className={`check${finished ? " done" : ""}`}>
+                        {finished && <Check size={15} strokeWidth={2.5} aria-hidden="true" />}
+                      </span>
+                    </button>
+                    <Link className="big-main" to={`/tasks/${task.id}`}>
+                      <span className="big-title">{task.title}</span>
+                      <span className="big-meta">{taskMeta(task, today)}</span>
+                    </Link>
+                    <span className="big-dot" aria-hidden="true" />
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

@@ -2,13 +2,15 @@ import { blocksForDay, type Block } from "./calendar";
 import { formatDue, toISODate } from "./dates";
 import { loadLog } from "./focus";
 import { quadrantOf } from "./quadrants";
+import { shortRepeat } from "./recurrence";
 import type { QuadrantId, Task } from "../types/task";
 
 const ORDER: Record<QuadrantId, number> = { do: 0, schedule: 1, delegate: 2, eliminate: 3 };
 
 function completedOn(task: Task): string | null {
-  if (!task.completed) return null;
-  const d = new Date(task.completedAt ?? task.updatedAt);
+  const stamp = task.completed ? (task.completedAt ?? task.updatedAt) : task.lastDoneAt;
+  if (!stamp) return null;
+  const d = new Date(stamp);
   return Number.isNaN(d.getTime()) ? null : toISODate(d);
 }
 
@@ -17,14 +19,11 @@ export function dayProgress(tasks: Task[], today: string): { done: number; total
   let done = 0;
   let total = 0;
   for (const t of tasks) {
-    if (t.completed) {
-      if (completedOn(t) === today) {
-        done++;
-        total++;
-      }
-    } else if (t.dueDate && t.dueDate <= today) {
+    if (completedOn(t) === today) {
+      done++;
       total++;
     }
+    if (!t.completed && t.dueDate && t.dueDate <= today) total++;
   }
   return { done, total };
 }
@@ -82,7 +81,12 @@ export function taskMeta(task: Task, today: string): string {
   else if (task.dueDate < today) due = `Overdue since ${formatDue(task.dueDate)}`;
   else due = `Due ${formatDue(task.dueDate).replace(/^Today/, "today")}`;
 
-  return [due, task.estimateMinutes ? `${task.estimateMinutes} min` : null, task.tags[0] ?? null]
+  return [
+    due,
+    task.estimateMinutes ? `${task.estimateMinutes} min` : null,
+    task.tags[0] ?? null,
+    task.repeat ? shortRepeat(task.repeat) : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 }

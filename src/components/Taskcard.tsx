@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import type { Task } from "../types/task";
 import { formatDue } from "../lib/dates";
+import { shortRepeat } from "../lib/recurrence";
 
 interface Props {
   task: Task;
@@ -10,6 +11,7 @@ export default function TaskCard({ task }: Props) {
   const meta = [
     formatDue(task.dueDate),
     task.estimateMinutes ? `${task.estimateMinutes} min` : null,
+    task.repeat ? shortRepeat(task.repeat) : null,
   ]
     .filter(Boolean)
     .join(" · ");

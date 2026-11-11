@@ -1,50 +1,66 @@
-import { formatDue } from "./dates";
+import { formatDue, toISODate } from "./dates";
 import { currentSubscription, postJobs, type ReminderJob } from "./push";
-import { dueMs, reminderMs } from "./reminder";
+import { occurrenceDates } from "./recurrence";
+import { dueMs, ruleMs } from "./reminder";
 import type { Task } from "../types/task";
 
-const MAX_JOBS = 100;
-const HORIZON_MS = 90 * 24 * 60 * 60 * 1000;
+const MAX_JOBS = 200;
+const DAY_MS = 86_400_000;
+const REPEAT_HORIZON_DAYS = 14;
+const MAX_OCCURRENCES = 14;
+const SINGLE_HORIZON_DAYS = 90;
 const SAME_TIME_MS = 30_000;
 
-function dueLabel(task: Task): string {
-  if (!task.dueDate) return "";
-  const when = formatDue(task.dueDate);
+function dueLabel(date: string, time?: string): string {
+  const when = formatDue(date);
   const day = when === "Today" ? "today" : when;
-  return task.dueTime ? `${day} at ${task.dueTime}` : day;
+  return time ? `${day} at ${time}` : day;
 }
 
 /** Reminders and "due now" notifications for open tasks, in this phone's time zone. */
 export function buildTaskJobs(tasks: Task[], nowMs: number = Date.now()): ReminderJob[] {
   const jobs: ReminderJob[] = [];
-  const upcoming = (at: number) => at > nowMs && at <= nowMs + HORIZON_MS;
+  const today = toISODate(new Date(nowMs));
+  const scanTo = toISODate(new Date(nowMs + (REPEAT_HORIZON_DAYS + 2) * DAY_MS));
 
   for (const task of tasks) {
-    if (task.completed) continue;
-    const due = dueMs(task);
-    const remindAt = reminderMs(task);
+    if (task.completed || !task.dueDate) continue;
 
-    if (due !== null && upcoming(due)) {
-      jobs.push({
-        id: `${task.id}:due`,
-        at: due,
-        title: task.title,
-        body: task.dueTime ? "Due now" : "Due today",
-        url: `/tasks/${task.id}`,
-        tag: `due-${task.id}`,
-      });
-    }
+    const repeating = Boolean(task.repeat);
+    const limit = nowMs + (repeating ? REPEAT_HORIZON_DAYS : SINGLE_HORIZON_DAYS) * DAY_MS;
+    const dates = repeating
+      ? occurrenceDates(task, today, scanTo, MAX_OCCURRENCES)
+      : [task.dueDate];
 
-    // One notification when a reminder lands on the due time itself.
-    const sameAsDue = due !== null && remindAt !== null && Math.abs(remindAt - due) < SAME_TIME_MS;
-    if (remindAt !== null && upcoming(remindAt) && !sameAsDue) {
-      jobs.push({
-        id: `${task.id}:reminder`,
-        at: remindAt,
-        title: task.title,
-        body: task.dueDate ? `Due ${dueLabel(task)}` : "Reminder",
-        url: `/tasks/${task.id}`,
-        tag: `reminder-${task.id}`,
+    for (const date of dates) {
+      const occurrence = { dueDate: date, dueTime: task.dueTime };
+      const due = dueMs(occurrence);
+      const url = `/tasks/${task.id}`;
+
+      if (due !== null && due > nowMs && due <= limit) {
+        jobs.push({
+          id: `${task.id}:${date}:due`,
+          at: due,
+          title: task.title,
+          body: task.dueTime ? "Due now" : "Due today",
+          url,
+          tag: `due-${task.id}-${date}`,
+        });
+      }
+
+      (task.reminders ?? []).forEach((rule, index) => {
+        const at = ruleMs(rule, occurrence);
+        if (at === null || at <= nowMs || at > limit) return;
+        // One notification when a reminder lands on the due time itself.
+        if (due !== null && Math.abs(at - due) < SAME_TIME_MS) return;
+        jobs.push({
+          id: `${task.id}:${date}:r${index}`,
+          at,
+          title: task.title,
+          body: `Due ${dueLabel(date, task.dueTime)}`,
+          url,
+          tag: `reminder-${task.id}-${date}-${index}`,
+        });
       });
     }
   }

@@ -2319,3 +2319,69 @@ button.primary-btn {
   line-height: 1.45;
   color: var(--text-2);
 }
+/* ---------- Multiple reminders and repeat ---------- */
+.reminders {
+  display: flex;
+  flex-direction: column;
+}
+
+.reminders.field-list {
+  gap: 8px;
+}
+
+.reminder-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.field .reminder-item {
+  gap: 8px;
+}
+
+.add-reminder {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--action);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.add-reminder:disabled {
+  opacity: 0.45;
+}
+
+.repeat-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0 4px;
+}
+
+.weekday-chips {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.weekday-chip {
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.weekday-chip[aria-pressed="true"] {
+  border-color: var(--action);
+  background: var(--action-tint);
+  color: var(--action);
+}

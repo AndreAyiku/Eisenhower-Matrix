@@ -27,8 +27,8 @@ interface DeviceRecord {
 type Cmd = (string | number)[];
 
 const TTL_SECONDS = 100 * 24 * 60 * 60;
-const MAX_JOBS_PER_KIND = 100;
-const MAX_JOBS_PER_DEVICE = 150;
+const MAX_JOBS_PER_KIND = 200;
+const MAX_JOBS_PER_DEVICE = 250;
 const HORIZON_MS = 90 * 24 * 60 * 60 * 1000;
 
 async function redis(commands: Cmd[], transaction = false): Promise<unknown[]> {

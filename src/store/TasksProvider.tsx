@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { toISODate } from "../lib/dates";
 import { newId } from "../lib/id";
-import { migrateTask } from "../lib/reminder";
+import { advanceTask } from "../lib/recurrence";
+import { migrateTask, type LegacyTask } from "../lib/reminder";
 import type { Task } from "../types/task";
 import { TasksContext, type TasksContextValue } from "./tasksContext";
 
@@ -12,7 +14,7 @@ function load(): Task[] {
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return (parsed as (Task & { reminderAt?: string })[]).map((t) => migrateTask(t));
+        return (parsed as LegacyTask[]).map((t) => migrateTask(t));
       }
     }
   } catch {
@@ -72,6 +74,17 @@ export default function TasksProvider({ children }: Props) {
       addTask: (task) => setTasks((prev) => [...prev, task]),
       updateTask: (id, patch) =>
         setTasks((prev) => prev.map((t) => (t.id === id ? touch(t, patch) : t))),
+      completeTask: (id) =>
+        setTasks((prev) =>
+          prev.map((t) => {
+            if (t.id !== id) return t;
+            const now = new Date();
+            return (
+              advanceTask(t, toISODate(now), now.toISOString()) ??
+              touch(t, { completed: true })
+            );
+          })
+        ),
       deleteTask: (id) => setTasks((prev) => prev.filter((t) => t.id !== id)),
       addSubtask: (taskId, title) =>
         setTasks((prev) =>

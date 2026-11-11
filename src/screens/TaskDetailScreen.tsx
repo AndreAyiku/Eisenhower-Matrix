@@ -4,14 +4,16 @@ import { ArrowLeft, CalendarDays, Play, Timer } from "lucide-react";
 import AutoTextarea from "../components/AutoTextarea";
 import PropertyRow from "../components/PropertyRow";
 import ReminderField from "../components/ReminderField";
+import RepeatField from "../components/RepeatField";
 import SubtaskList from "../components/SubtaskList";
 import Switch from "../components/Switch";
 import { formatDateTime, fromLocalInput, toLocalInput } from "../lib/dates";
 import { estimateOptions, formatEstimate } from "../lib/format";
 import { openPicker } from "../lib/picker";
 import { QUADRANTS, quadrantOf } from "../lib/quadrants";
+import { shortRepeat } from "../lib/recurrence";
 import { useTasks } from "../store/tasksContext";
-import type { Task } from "../types/task";
+import type { RepeatRule, Task } from "../types/task";
 
 /** Stable text version of a task, used to tell whether anything changed. */
 function snapshot(task: Task): string {
@@ -49,7 +51,7 @@ export default function TaskDetailScreen() {
 }
 
 function TaskEditor({ stored }: { stored: Task }) {
-  const { updateTask, deleteTask } = useTasks();
+  const { updateTask, completeTask, deleteTask } = useTasks();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,6 +78,11 @@ function TaskEditor({ stored }: { stored: Task }) {
   const discard = () => setDraft(stored);
 
   const toggleDone = () => {
+    if (draft.repeat && draft.dueDate) {
+      completeTask(draft.id);
+      goBack();
+      return;
+    }
     const next = cleaned({ ...draft, completed: !draft.completed });
     updateTask(next.id, next);
     if (next.completed) goBack();
@@ -88,6 +95,24 @@ function TaskEditor({ stored }: { stored: Task }) {
     }
   };
 
+  const changeDue = (value: string) => {
+    const { date, time } = fromLocalInput(value);
+    setDraft((d) => ({
+      ...d,
+      dueDate: date,
+      dueTime: time,
+      repeat: d.repeat && date ? { ...d.repeat, anchor: date } : undefined,
+      reminders: date ? d.reminders : [],
+    }));
+  };
+
+  const changeRepeat = (rule?: RepeatRule) =>
+    setDraft((d) => ({
+      ...d,
+      repeat: rule,
+      reminders: rule ? (d.reminders ?? []).filter((r) => r.type !== "custom") : d.reminders,
+    }));
+
   const quadrantId = quadrantOf(draft);
   const quadrant = QUADRANTS.find((q) => q.id === quadrantId)!;
 
@@ -95,6 +120,12 @@ function TaskEditor({ stored }: { stored: Task }) {
   const urgentHint = draft.dueDate
     ? `Due ${dueText.startsWith("Today") ? "today" + dueText.slice(5) : dueText}`
     : "Needs attention soon";
+
+  const doneLabel = draft.repeat
+    ? "Mark this one done"
+    : draft.completed
+      ? "Mark as not done"
+      : "Mark as done";
 
   return (
     <div className="app detail">
@@ -119,6 +150,7 @@ function TaskEditor({ stored }: { stored: Task }) {
           <span className="chip chip-q" data-q={quadrantId}>
             {quadrant.label}
           </span>
+          {draft.repeat && <span className="chip">{shortRepeat(draft.repeat)}</span>}
           {draft.tags.map((tag) => (
             <span key={tag} className="chip">
               {tag}
@@ -187,7 +219,9 @@ function TaskEditor({ stored }: { stored: Task }) {
             label="Due date"
             value={dueText}
             hasValue={Boolean(draft.dueDate)}
-            onClear={() => patch({ dueDate: undefined, dueTime: undefined, reminder: undefined })}
+            onClear={() =>
+              patch({ dueDate: undefined, dueTime: undefined, repeat: undefined, reminders: [] })
+            }
             clearLabel="Clear due date"
           >
             <input
@@ -196,19 +230,24 @@ function TaskEditor({ stored }: { stored: Task }) {
               aria-label="Due date"
               value={toLocalInput(draft.dueDate, draft.dueTime)}
               onClick={openPicker}
-              onChange={(e) => {
-                const { date, time } = fromLocalInput(e.target.value);
-                patch({ dueDate: date, dueTime: time });
-              }}
+              onChange={(e) => changeDue(e.target.value)}
             />
           </PropertyRow>
+
+          <RepeatField
+            variant="row"
+            dueDate={draft.dueDate}
+            value={draft.repeat}
+            onChange={changeRepeat}
+          />
 
           <ReminderField
             variant="row"
             dueDate={draft.dueDate}
             dueTime={draft.dueTime}
-            value={draft.reminder}
-            onChange={(reminder) => patch({ reminder })}
+            repeat={draft.repeat}
+            value={draft.reminders}
+            onChange={(reminders) => patch({ reminders })}
           />
         </section>
 
@@ -237,7 +276,7 @@ function TaskEditor({ stored }: { stored: Task }) {
               </Link>
               <div className="quiet-actions">
                 <button type="button" className="quiet-btn" onClick={toggleDone}>
-                  {draft.completed ? "Mark as not done" : "Mark as done"}
+                  {doneLabel}
                 </button>
                 <button type="button" className="quiet-btn danger" onClick={remove}>
                   Delete task

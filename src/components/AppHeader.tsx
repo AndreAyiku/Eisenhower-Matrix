@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Bell, Settings2 } from "lucide-react";
+import { Bell } from "lucide-react";
 import NotificationsSheet from "./NotificationsSheet";
 
 interface Props {
@@ -25,9 +25,6 @@ export default function AppHeader({ eyebrow, title, subtitle }: Props) {
               onClick={() => setNotifOpen(true)}
             >
               <Bell size={22} strokeWidth={1.75} />
-            </button>
-            <button type="button" className="icon-btn" aria-label="Settings">
-              <Settings2 size={22} strokeWidth={1.75} />
             </button>
           </div>
         </div>

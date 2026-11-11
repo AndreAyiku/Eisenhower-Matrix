@@ -6,6 +6,8 @@ export interface TasksContextValue {
   getTask: (id: string) => Task | undefined;
   addTask: (task: Task) => void;
   updateTask: (id: string, patch: Partial<Omit<Task, "id">>) => void;
+  /** Marks a task done. A repeating task moves to its next time instead of closing. */
+  completeTask: (id: string) => void;
   deleteTask: (id: string) => void;
   addSubtask: (taskId: string, title: string) => void;
   updateSubtask: (

@@ -16,6 +16,7 @@ import { DEFAULT_BLOCK_MIN, defaultDue, formatDayLong, parseISO } from "../lib/c
 import { toISODate } from "../lib/dates";
 import { estimateOptions, formatDurationLong } from "../lib/format";
 import { openPicker } from "../lib/picker";
+import { describeRepeat } from "../lib/recurrence";
 import { CALENDAR_OPTIONS, minToTime, scheduleStatus, timeToMin } from "../lib/schedule";
 import { useTasks } from "../store/tasksContext";
 import type { ReminderRule, Task } from "../types/task";
@@ -30,6 +31,7 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
   useSheet(onClose);
   const { tasks, updateTask } = useTasks();
 
+  const recurring = Boolean(task.repeat);
   const scheduled = Boolean(task.dueTime);
   const initialDuration = task.estimateMinutes ?? DEFAULT_BLOCK_MIN;
 
@@ -41,7 +43,7 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
   );
   const [end, setEnd] = useState(() => minToTime(timeToMin(start) + initialDuration));
   const [calendar, setCalendar] = useState(task.calendar ?? "");
-  const [reminder, setReminder] = useState<ReminderRule | undefined>(task.reminder);
+  const [reminders, setReminders] = useState<ReminderRule[]>(task.reminders ?? []);
 
   const startMin = timeToMin(start);
   const endMin = timeToMin(end);
@@ -71,13 +73,13 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
   const save = () => {
     if (!valid) return;
     updateTask(task.id, {
-      dueDate: date,
+      ...(recurring ? {} : { dueDate: date }),
       dueTime: start,
       estimateMinutes: duration,
       calendar: calendar || undefined,
-      reminder,
+      reminders,
     });
-    onSaved?.(date);
+    if (!recurring) onSaved?.(date);
     onClose();
   };
 
@@ -85,7 +87,7 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
   const remove = () => {
     updateTask(task.id, {
       dueTime: undefined,
-      reminder: task.reminder?.type === "before" ? undefined : task.reminder,
+      reminders: (task.reminders ?? []).filter((r) => r.type !== "before"),
     });
     onClose();
   };
@@ -118,23 +120,30 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
           <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true" />
         </Link>
 
-        <div className="field">
-          <span className="field-label">Date</span>
-          <div className="field-box">
-            <span>
-              {formatDayLong(date)} {parseISO(date).getFullYear()}
-            </span>
-            <CalendarDays className="field-icon" size={20} strokeWidth={1.75} aria-hidden="true" />
-            <input
-              className="prop-native"
-              type="date"
-              aria-label="Date"
-              value={date}
-              onClick={openPicker}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-            />
+        {recurring ? (
+          <p className="notif-note">
+            {describeRepeat(task.repeat)}. Changes here apply to every time it repeats. To
+            move the whole series, change its due date on the task page.
+          </p>
+        ) : (
+          <div className="field">
+            <span className="field-label">Date</span>
+            <div className="field-box">
+              <span>
+                {formatDayLong(date)} {parseISO(date).getFullYear()}
+              </span>
+              <CalendarDays className="field-icon" size={20} strokeWidth={1.75} aria-hidden="true" />
+              <input
+                className="prop-native"
+                type="date"
+                aria-label="Date"
+                value={date}
+                onClick={openPicker}
+                onChange={(e) => e.target.value && setDate(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="field-row">
           <div className="field">
@@ -210,8 +219,9 @@ export default function EditBlockSheet({ task, onClose, onSaved }: Props) {
             variant="row"
             dueDate={date}
             dueTime={start}
-            value={reminder}
-            onChange={setReminder}
+            repeat={task.repeat}
+            value={reminders}
+            onChange={setReminders}
           />
         </section>
 

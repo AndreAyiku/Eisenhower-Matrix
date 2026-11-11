@@ -34,7 +34,7 @@ export const SAMPLE_TASKS: Task[] = [
     tags: ["Strategy"],
     dueDate: todayISO(),
     dueTime: "17:00",
-    reminder: { type: "before", minutes: 30 },
+    reminders: [{ type: "before", minutes: 30 }],
     estimateMinutes: 45,
     subtasks: [
       { id: "1a", title: "Outline the launch story", done: true, completedAt: todayAt(9, 10) },

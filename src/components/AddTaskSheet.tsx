@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { CalendarDays, Clock, Plus, X } from "lucide-react";
 import AutoTextarea from "./AutoTextarea";
 import ReminderField from "./ReminderField";
+import RepeatField from "./RepeatField";
 import Switch from "./Switch";
 import { useSheet } from "../hooks/useSheet";
 import { formatLocalDateTime, fromLocalInput } from "../lib/dates";
@@ -11,7 +12,7 @@ import { openPicker } from "../lib/picker";
 import { suggestionReason, suggestPriority, type PriorityFlags } from "../lib/priority";
 import { QUADRANTS, quadrantOf } from "../lib/quadrants";
 import { useTasks } from "../store/tasksContext";
-import type { ReminderRule } from "../types/task";
+import type { ReminderRule, RepeatRule } from "../types/task";
 
 interface Props {
   onClose: () => void;
@@ -25,12 +26,25 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
   const [notes, setNotes] = useState("");
   const [dueLocal, setDueLocal] = useState(initialDue ?? "");
   const [estimate, setEstimate] = useState(0);
-  const [reminder, setReminder] = useState<ReminderRule | undefined>(undefined);
+  const [repeat, setRepeat] = useState<RepeatRule | undefined>(undefined);
+  const [reminders, setReminders] = useState<ReminderRule[]>([]);
   const [manual, setManual] = useState<PriorityFlags | null>(null);
 
   const due = fromLocalInput(dueLocal);
   const flags = manual ?? suggestPriority(due.date);
   const quadrant = QUADRANTS.find((q) => q.id === quadrantOf(flags))!;
+
+  const changeDue = (value: string) => {
+    setDueLocal(value);
+    const { date } = fromLocalInput(value);
+    setRepeat((r) => (r && date ? { ...r, anchor: date } : undefined));
+    if (!date) setReminders([]);
+  };
+
+  const changeRepeat = (rule?: RepeatRule) => {
+    setRepeat(rule);
+    if (rule) setReminders((r) => r.filter((x) => x.type !== "custom"));
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -47,7 +61,8 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
       tags: [],
       dueDate: due.date,
       dueTime: due.time,
-      reminder: due.date ? reminder : undefined,
+      repeat: due.date && repeat ? { ...repeat, anchor: due.date } : undefined,
+      reminders: due.date ? reminders : [],
       estimateMinutes: estimate || undefined,
       subtasks: [],
       createdAt: now,
@@ -111,10 +126,7 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
                   type="button"
                   className="field-clear"
                   aria-label="Clear due date"
-                  onClick={() => {
-                    setDueLocal("");
-                    setReminder(undefined);
-                  }}
+                  onClick={() => changeDue("")}
                 >
                   <X size={16} strokeWidth={1.75} />
                 </button>
@@ -127,7 +139,7 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
                 aria-label="Due date"
                 value={dueLocal}
                 onClick={openPicker}
-                onChange={(e) => setDueLocal(e.target.value)}
+                onChange={(e) => changeDue(e.target.value)}
               />
             </div>
           </div>
@@ -156,12 +168,15 @@ export default function AddTaskSheet({ onClose, initialDue }: Props) {
           </div>
         </div>
 
+        <RepeatField variant="field" dueDate={due.date} value={repeat} onChange={changeRepeat} />
+
         <ReminderField
           variant="field"
           dueDate={due.date}
           dueTime={due.time}
-          value={reminder}
-          onChange={setReminder}
+          repeat={repeat}
+          value={reminders}
+          onChange={setReminders}
         />
 
         <section className="field" aria-label="Priority">
